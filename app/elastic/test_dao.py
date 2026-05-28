@@ -166,7 +166,11 @@ class BaseDAOTest(unittest.TestCase):
         BaseDAOTest.value = value
 
     def test_40_patch(self):
-        self.dao.patch("test-person-1", {"name": "Person First"})
+        self.dao.patch("test-person-1", {"name": "Person First X"})
+
+    def test_40_patch_a(self):
+        self.dao.patch("test-person-1",
+            {"id": "test-person-0", "name": "Person First", "created_at": datetime.now()})
 
     def test_40_patch_fail(self):
         self.assertRaises(HTTPError, lambda: self.dao.patch("test-person-0", {"name": "X First"}))
@@ -180,6 +184,7 @@ class BaseDAOTest(unittest.TestCase):
         self.assertEqual("first@test.com", value.email, "Check email")
         self.assertIsNotNone(value.created_at, "Check created_at")
         self.assertIsNotNone(value.updated_at, "Check updated_at")
+        self.assertEqual(self.value.created_at, value.created_at, "Check created_at")
         self.assertLess(value.created_at, value.updated_at, "Check updated_at")
         self.assertLess(self.value.updated_at, value.updated_at, "Check updated_at")
 
