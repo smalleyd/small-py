@@ -15,14 +15,14 @@ class TestBaseDAO(BaseDAO[Person, PersonSearchRequest]):
     def __init__(self, es: Elasticsearch):
         super().__init__(es, "person", Person)
 
-    def _build_query(self, filter: PersonSearchRequest) -> dict[str, Any]:
+    def _build_query(self, f: PersonSearchRequest) -> dict[str, Any]:
         o = []
-        if filter.ids:
-            o.append({"ids": {"values": filter.ids}})
-        if filter.name:
-            o.append({"match": {"name": { "query": filter.name, "fuzziness": "AUTO" }}})
-        if filter.email:
-            o.append({"term": {"email": filter.email}})
+        if f.ids:
+            o.append({"ids": {"values": f.ids}})
+        if f.name:
+            o.append({"match": {"name": { "query": f.name, "fuzziness": "AUTO" }}})
+        if f.email:
+            o.append({"term": {"email.keyword": f.email}})
 
         return {"bool": {"must": o}}
 
@@ -117,15 +117,15 @@ class BaseDAOTest(unittest.TestCase):
     @parameterized.expand([
         (PersonSearchRequest(ids=["test-person-1"]), 1),
         (PersonSearchRequest(ids=["test-person-1-invalid"]), 0),
-        (PersonSearchRequest(name="First Person"), 1),
-        (PersonSearchRequest(name="test-invalid"), 0),
+        (PersonSearchRequest(name="\"First Person\""), 1),
+        (PersonSearchRequest(name="totally-invalid"), 0),
         (PersonSearchRequest(email="first@test.com"), 1),
         (PersonSearchRequest(email="invalid@test.com"), 0)
     ])
     def test_10_search(self, f: PersonSearchRequest, expected: int):
-        values = self.dao.search(PersonSearchRequest(ids=["test-person-1"]))
+        values = self.dao.search(f)
         self.assertIsNotNone(values, "Exists")
-        self.assertEqual(1, len(values), "Check size")
+        self.assertEqual(expected, len(values), "Check size")
 
     def test_20_remove(self):
         self.dao.remove("test-person-1")
@@ -162,6 +162,26 @@ class BaseDAOTest(unittest.TestCase):
         self.assertIsNotNone(value.created_at, "Check created_at")
         self.assertIsNotNone(value.updated_at, "Check updated_at")
         self.assertLess(value.created_at, value.updated_at, "Check updated_at")
+
+        BaseDAOTest.value = value
+
+    def test_40_patch(self):
+        self.dao.patch("test-person-1", {"name": "Person First"})
+
+    def test_40_patch_fail(self):
+        self.assertRaises(HTTPError, lambda: self.dao.patch("test-person-0", {"name": "X First"}))
+
+    def test_40_patch_get(self):
+        value = self.dao.get("test-person-1")
+
+        self.assertIsNotNone(value, "Exists")
+        self.assertEqual("test-person-1", value.id, "Check id")
+        self.assertEqual("Person First", value.name, "Check name")
+        self.assertEqual("first@test.com", value.email, "Check email")
+        self.assertIsNotNone(value.created_at, "Check created_at")
+        self.assertIsNotNone(value.updated_at, "Check updated_at")
+        self.assertLess(value.created_at, value.updated_at, "Check updated_at")
+        self.assertLess(self.value.updated_at, value.updated_at, "Check updated_at")
 
     def test_99_remove(self):
         self.dao.remove("test-person-1")

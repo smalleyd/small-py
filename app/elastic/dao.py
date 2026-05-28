@@ -78,8 +78,14 @@ class BaseDAO(Generic[E, F]):
 
         return value
 
-    def patch(self, value: dict[str, Any]):
-        pass
+    def patch(self, id:str, value: dict[str, Any]):
+        self.does_exist(id)
+
+        if hasattr(value, "id"): del value["id"]
+        if hasattr(value, self.field_created_at): del value[self.field_created_at]
+        value[self.field_updated_at] = datetime.now()
+
+        self.update(id, value)
 
     def refresh(self):
         self.es.indices.refresh(index=self.index)
