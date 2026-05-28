@@ -6,6 +6,7 @@ dependencies = [
   "annotated-doc==0.0.4",
   "annotated-types==0.7.0",
   "anyio==4.13.0",
+  "coverage==7.14.1",
   "elasticsearch==9.3.0",
   "fastapi[standard]==0.136.1",
   "idna==3.16",
