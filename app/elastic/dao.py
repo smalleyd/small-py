@@ -148,6 +148,9 @@ class BaseDAO(Generic[E, F]):
                 return False
         return True
 
+    def total_size_in_bytes(self) -> int:
+        return self.es.indices.stats(index=self.index, metric="store")["_all"]["total"]["store"]["total_data_set_size_in_bytes"]
+
     @property
     def field_created_at(self) -> str:
         """Derived class can optionally override."""

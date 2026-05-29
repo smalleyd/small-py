@@ -66,6 +66,9 @@ class BaseDAOTest(unittest.TestCase):
     def test_00_connect_invalid(self, args: dict[str, Any], exception: type[BaseException]):
         self.assertFalse(BaseDAO.connect(**args).ping())
 
+    def test_00_total_size_in_bytes(self):
+        self.assertLess(350000, self.dao.total_size_in_bytes())
+
     def test_00_create(self):
         BaseDAOTest.initial_count = self.dao.count(PersonSearchRequest())
         value = BaseDAOTest.value = self.dao.add(Person(id="test-person-1", name="First Person", email="first@test.com"))
