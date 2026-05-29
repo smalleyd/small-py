@@ -78,6 +78,9 @@ class BaseDAO(Generic[E, F]):
 
         return value
 
+    def before_save(self, id:str, value: dict[str, Any], exists: bool) -> dict[str, Any]:
+        return value
+
     def patch(self, id:str, value: dict[str, Any]):
         self.does_exist(id)
 
@@ -85,7 +88,7 @@ class BaseDAO(Generic[E, F]):
         if self.field_created_at in value: del value[self.field_created_at]
         value[self.field_updated_at] = datetime.now()
 
-        self.update(id, value)
+        self.update(id, self.before_save(id, value, True))
 
     def refresh(self):
         self.es.indices.refresh(index=self.index)
@@ -108,9 +111,10 @@ class BaseDAO(Generic[E, F]):
         now = datetime.now()
         v[self.field_updated_at] = now
         created_at = self.get_created_at(value.id)  # Do NOT update the created_at field if it already exists.
-        v[self.field_created_at] = created_at if created_at else now
+        exists = created_at is not None
+        v[self.field_created_at] = created_at if exists else now
 
-        self.es.index(index=self.index, id=value.id, document=v)
+        self.es.index(index=self.index, id=value.id, document=self.before_save(value.id, v, exists))
 
         return self.clazz(**v)
 
