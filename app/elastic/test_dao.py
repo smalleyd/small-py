@@ -39,11 +39,13 @@ class BaseDAOTest(unittest.TestCase):
         cls.dao = TestBaseDAO(client)
 
         cls.value = None
+        cls.scroll_id = None
         cls.initial_count = 0
 
     def setUp(self):
         self.dao = BaseDAOTest.dao
         self.value = BaseDAOTest.value
+        self.scroll_id = BaseDAOTest.scroll_id
         self.initial_count = BaseDAOTest.initial_count
 
     @classmethod
@@ -179,6 +181,20 @@ class BaseDAOTest(unittest.TestCase):
 
     def test_10_search_scroll(self):
         results = self.dao.search(PersonSearchRequest(), size=5, scroll="30s", sort=["created_at:Desc"])
+        self.assertIsNotNone(results, "Check results")
+        self.assertEqual(self.initial_count + 1, results.total, "Check results.total")
+        self.assertIsNotNone(results.scroll_id, "Check results.scroll_id")
+        self.assertIsNotNone(results.scores, "Check results.scores")
+        self.assertEqual(5, len(results.scores), "Check results.scores.size")
+
+        values = results.data
+        self.assertIsNotNone(values, "Exists")
+        self.assertEqual(5, len(values), "Check size")
+
+        BaseDAOTest.scroll_id = results.scroll_id
+
+    def test_10_search_scroll_next(self):
+        results = self.dao.scroll(self.scroll_id, "10s")
         self.assertIsNotNone(results, "Check results")
         self.assertEqual(self.initial_count + 1, results.total, "Check results.total")
         self.assertIsNotNone(results.scroll_id, "Check results.scroll_id")

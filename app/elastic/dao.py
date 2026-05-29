@@ -4,6 +4,7 @@ from urllib.error import HTTPError
 from dataclasses import dataclass, field
 from typing import Any, Generic, TypeVar
 
+from elastic_transport._response import ObjectApiResponse
 from elasticsearch import (
     Elasticsearch,
     NotFoundError
@@ -134,29 +135,7 @@ class BaseDAO(Generic[E, F]):
     def count(self, filter: F) -> int:
         return self.es.count(index=self.index, query=self.build_query(filter)).body["count"]
 
-    def search(self,
-        filter_: F,
-        *,
-        from_: int = 0,
-        size: int = 20,
-        scroll: str | None = None,
-        sort: list[str] | None = None,
-        source_exclude_vectors: bool = True,
-        source_excludes: list[str] | None = None,
-        source_includes: list[str] | None = None
-    ) -> Results[E]:
-        resp = self.es.search(
-            index=self.index,
-            from_=from_,
-            size=size,
-            scroll=scroll,
-            sort=sort,
-            track_scores=True,
-            track_total_hits=True,
-            source_excludes=source_excludes,
-            source_includes=source_includes,
-            source_exclude_vectors=source_exclude_vectors,
-            query=self.build_query(filter_))
+    def _results(self, resp: ObjectApiResponse[Any]) -> Results[E]:
         hits_ = resp["hits"]
         hits = hits_["hits"]
         if not hits:
@@ -168,6 +147,33 @@ class BaseDAO(Generic[E, F]):
             data=[self.clazz(**hit["_source"]) for hit in hits],
             scores={hit["_id"]: hit["_score"] for hit in hits}
         )
+
+    def scroll(self, id:str, time:str="30s") -> Results[E]:
+        return self._results(self.es.scroll(scroll_id=id,scroll=time))
+
+    def search(self,
+        filter_: F,
+        *,
+        from_: int = 0,
+        size: int = 20,
+        scroll: str | None = None,
+        sort: list[str] | None = None,
+        source_exclude_vectors: bool = True,
+        source_excludes: list[str] | None = None,
+        source_includes: list[str] | None = None
+    ) -> Results[E]:
+        return self._results(self.es.search(
+            index=self.index,
+            from_=from_,
+            size=size,
+            scroll=scroll,
+            sort=sort,
+            track_scores=True,
+            track_total_hits=True,
+            source_excludes=source_excludes,
+            source_includes=source_includes,
+            source_exclude_vectors=source_exclude_vectors,
+            query=self.build_query(filter_)))
 
     def build_query(self, filter: F) -> dict[str, Any]:
         return {"match_all": {}} if self.empty(filter) else self._build_query(filter)
