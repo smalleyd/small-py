@@ -199,6 +199,27 @@ class BaseDAOTest(unittest.TestCase):
         self.assertLess(value.created_at, value.updated_at, "Check updated_at")
         self.assertLess(self.value.updated_at, value.updated_at, "Check updated_at")
 
+        BaseDAOTest.value = value
+
+    def test_50_set(self):
+        self.dao.set("test-person-1", "email", "first@test.org")
+
+    def test_50_set_fail(self):
+        self.assertRaises(HTTPError, lambda: self.dao.set("test-person-0", "email", "first@test.net"))
+
+    def test_50_set_get(self):
+        value = self.dao.get("test-person-1")
+
+        self.assertIsNotNone(value, "Exists")
+        self.assertEqual("test-person-1", value.id, "Check id")
+        self.assertEqual("Person First", value.name, "Check name")
+        self.assertEqual("first@test.org", value.email, "Check email")
+        self.assertIsNotNone(value.created_at, "Check created_at")
+        self.assertIsNotNone(value.updated_at, "Check updated_at")
+        self.assertEqual(self.value.created_at, value.created_at, "Check created_at")
+        self.assertLess(value.created_at, value.updated_at, "Check updated_at")
+        self.assertLess(self.value.updated_at, value.updated_at, "Check updated_at")
+
     def test_99_remove(self):
         self.dao.remove("test-person-1")
 
