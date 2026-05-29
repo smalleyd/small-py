@@ -14,6 +14,11 @@ from ..models.person import Person, PersonSearchRequest
 class TestBaseDAO(BaseDAO[Person, PersonSearchRequest]):
     def __init__(self, es: Elasticsearch):
         super().__init__(es, "person", Person)
+        self.before_save_exists:bool | None = None
+
+    def before_save(self, id:str, value: dict[str, Any], exists: bool) -> dict[str, Any]:
+        self.before_save_exists = exists
+        return value
 
     def _build_query(self, f: PersonSearchRequest) -> dict[str, Any]:
         o = []
@@ -71,6 +76,7 @@ class BaseDAOTest(unittest.TestCase):
         self.assertEqual("first@test.com", value.email, "Check email")
         self.assertIsNone(value.created_at, "Check created_at")
         self.assertIsNone(value.updated_at, "Check updated_at")
+        self.assertIsNone(self.dao.before_save_exists, "Check dao_before_save_exists")
 
     def test_00_create_check(self):
         value = self.dao.get("test-person-1")
@@ -129,6 +135,7 @@ class BaseDAOTest(unittest.TestCase):
 
     def test_20_remove(self):
         self.dao.remove("test-person-1")
+        self.assertIsNone(self.dao.before_save_exists, "Check dao_before_save_exists")
 
     def test_20_remove_exists(self):
         self.assertFalse(self.dao.exists("test-person-1"))
@@ -149,6 +156,7 @@ class BaseDAOTest(unittest.TestCase):
         self.assertGreater(value.updated_at, now, "Check updated_at")
         self.assertLess(value.updated_at, now + delta, "Check updated_at")
         self.assertEqual(value.created_at, value.updated_at, "Check updated_at")
+        self.assertFalse(self.dao.before_save_exists, "Check dao_before_save_exists")
 
     def test_30_upsert_again(self):
         now = datetime.now()
@@ -162,15 +170,18 @@ class BaseDAOTest(unittest.TestCase):
         self.assertIsNotNone(value.created_at, "Check created_at")
         self.assertIsNotNone(value.updated_at, "Check updated_at")
         self.assertLess(value.created_at, value.updated_at, "Check updated_at")
+        self.assertTrue(self.dao.before_save_exists, "Check dao_before_save_exists")
 
         BaseDAOTest.value = value
 
     def test_40_patch(self):
         self.dao.patch("test-person-1", {"name": "Person First X"})
+        self.assertTrue(self.dao.before_save_exists, "Check dao_before_save_exists")
 
     def test_40_patch_a(self):
         self.dao.patch("test-person-1",
             {"id": "test-person-0", "name": "Person First", "created_at": datetime.now()})
+        self.assertTrue(self.dao.before_save_exists, "Check dao_before_save_exists")
 
     def test_40_patch_fail(self):
         self.assertRaises(HTTPError, lambda: self.dao.patch("test-person-0", {"name": "X First"}))
