@@ -6,9 +6,9 @@ class AccessToken(BaseModel):
   token_type: str = "bearer"
 
 class Person(BaseModel):
-  id: str
+  id: str | None = None
   name: str | None = None
-  email: str
+  email: str | None = None
   created_at: datetime | None = None
   updated_at: datetime | None = None
 

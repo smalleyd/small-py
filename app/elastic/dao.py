@@ -1,6 +1,7 @@
 from os import getenv
 from datetime import datetime
 from urllib.error import HTTPError
+from dataclasses import dataclass, field
 from typing import Any, Generic, TypeVar
 
 from elasticsearch import (
@@ -10,6 +11,13 @@ from elasticsearch import (
 
 E = TypeVar("E")
 F = TypeVar("F")
+
+@dataclass
+class Results(Generic[E]):
+    total: int = 0
+    scroll_id: str | None = None
+    data: list[E] = field(default_factory=list)
+    scores: dict[str, float] = field(default_factory=dict)
 
 class BaseDAO(Generic[E, F]):
     def __init__(self, es: Elasticsearch, index: str, clazz: type[E]):
@@ -126,14 +134,40 @@ class BaseDAO(Generic[E, F]):
     def count(self, filter: F) -> int:
         return self.es.count(index=self.index, query=self.build_query(filter)).body["count"]
 
-    def search(self, filter: F) -> list[E]:
-        hits = self.es.search(
+    def search(self,
+        filter_: F,
+        *,
+        from_: int = 0,
+        size: int = 20,
+        scroll: str | None = None,
+        sort: list[str] | None = None,
+        source_exclude_vectors: bool = True,
+        source_excludes: list[str] | None = None,
+        source_includes: list[str] | None = None
+    ) -> Results[E]:
+        resp = self.es.search(
             index=self.index,
-            query=self.build_query(filter))["hits"]["hits"]
+            from_=from_,
+            size=size,
+            scroll=scroll,
+            sort=sort,
+            track_scores=True,
+            track_total_hits=True,
+            source_excludes=source_excludes,
+            source_includes=source_includes,
+            source_exclude_vectors=source_exclude_vectors,
+            query=self.build_query(filter_))
+        hits_ = resp["hits"]
+        hits = hits_["hits"]
         if not hits:
-            return []
+            return Results[E]()
 
-        return [self.clazz(**hit["_source"]) for hit in hits]
+        return Results(
+            total=hits_["total"]["value"],
+            scroll_id=resp["_scroll_id"] if "_scroll_id" in resp else None,
+            data=[self.clazz(**hit["_source"]) for hit in hits],
+            scores={hit["_id"]: hit["_score"] for hit in hits}
+        )
 
     def build_query(self, filter: F) -> dict[str, Any]:
         return {"match_all": {}} if self.empty(filter) else self._build_query(filter)

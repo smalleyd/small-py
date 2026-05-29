@@ -67,7 +67,7 @@ class BaseDAOTest(unittest.TestCase):
         self.assertFalse(BaseDAO.connect(**args).ping())
 
     def test_00_total_size_in_bytes(self):
-        self.assertLess(350000, self.dao.total_size_in_bytes())
+        self.assertLess(300000, self.dao.total_size_in_bytes())
 
     def test_00_create(self):
         BaseDAOTest.initial_count = self.dao.count(PersonSearchRequest())
@@ -132,9 +132,62 @@ class BaseDAOTest(unittest.TestCase):
         (PersonSearchRequest(email="invalid@test.com"), 0)
     ])
     def test_10_search(self, f: PersonSearchRequest, expected: int):
-        values = self.dao.search(f)
+        results = self.dao.search(f)
+        self.assertIsNotNone(results, "Check results")
+        self.assertEqual(expected, results.total, "Check results.total")
+        self.assertIsNone(results.scroll_id, "Check results.scroll_id")
+        self.assertIsNotNone(results.scores, "Check results.scores")
+        self.assertEqual(expected, len(results.scores), "Check results.scores.size")
+
+        values = results.data
         self.assertIsNotNone(values, "Exists")
         self.assertEqual(expected, len(values), "Check size")
+
+    def test_10_search_exclude(self):
+        values = self.dao.search(PersonSearchRequest(ids=["test-person-1"]),
+            source_excludes=["name"]).data
+        self.assertIsNotNone(values, "Exists")
+        self.assertEqual(1, len(values), "Check size")
+
+        value = values[0]
+        self.assertEqual("test-person-1", value.id, "Check id")
+        self.assertIsNone(value.name, "Check name")
+        self.assertEqual("first@test.com", value.email, "Check email")
+
+    def test_10_search_include(self):
+        values = self.dao.search(PersonSearchRequest(ids=["test-person-1"]),
+            source_includes=["name"]).data
+        self.assertIsNotNone(values, "Exists")
+        self.assertEqual(1, len(values), "Check size")
+
+        value = values[0]
+        self.assertIsNone(value.id, "Check id")
+        self.assertEqual("First Person", value.name, "Check name")
+        self.assertIsNone(value.email, "Check email")
+
+    def test_10_search_paging(self):
+        results = self.dao.search(PersonSearchRequest(), from_=5, size=5, sort=["created_at:Desc", "name:Asc"])
+        self.assertIsNotNone(results, "Check results")
+        self.assertEqual(self.initial_count + 1, results.total, "Check results.total")
+        self.assertIsNone(results.scroll_id, "Check results.scroll_id")
+        self.assertIsNotNone(results.scores, "Check results.scores")
+        self.assertEqual(5, len(results.scores), "Check results.scores.size")
+
+        values = results.data
+        self.assertIsNotNone(values, "Exists")
+        self.assertEqual(5, len(values), "Check size")
+
+    def test_10_search_scroll(self):
+        results = self.dao.search(PersonSearchRequest(), size=5, scroll="30s", sort=["created_at:Desc"])
+        self.assertIsNotNone(results, "Check results")
+        self.assertEqual(self.initial_count + 1, results.total, "Check results.total")
+        self.assertIsNotNone(results.scroll_id, "Check results.scroll_id")
+        self.assertIsNotNone(results.scores, "Check results.scores")
+        self.assertEqual(5, len(results.scores), "Check results.scores.size")
+
+        values = results.data
+        self.assertIsNotNone(values, "Exists")
+        self.assertEqual(5, len(values), "Check size")
 
     def test_20_remove(self):
         self.dao.remove("test-person-1")
