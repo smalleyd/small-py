@@ -21,10 +21,24 @@ class Results(Generic[E]):
     scores: dict[str, float] = field(default_factory=dict)
 
 class BaseDAO(Generic[E, F]):
-    def __init__(self, es: Elasticsearch, index: str, clazz: type[E]):
+    def __init__(
+        self,
+        es: Elasticsearch,
+        index: str,
+        clazz: type[E],
+        mappings: dict[str, Any] | None = None,
+        num_of_shards: int = 1
+    ):
         self.es = es
         self.index = index
         self.clazz = clazz
+
+        if mappings is not None:
+            indices = es.indices
+            if not indices.exists(index=self.index).body:
+                indices.create(index=self.index, mappings=mappings, settings={"number_of_shards": num_of_shards})
+            else:
+                indices.put_mapping(index=self.index, body=mappings)
 
     @classmethod
     def connect(cls, envHost: str = "ES_HOST", envCreds: str = "ES_CREDS"):
@@ -89,6 +103,16 @@ class BaseDAO(Generic[E, F]):
 
     def before_save(self, id:str, value: dict[str, Any], exists: bool) -> dict[str, Any]:
         return value
+
+    def load(self, values: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        body = []
+        for v in values:
+            body.append({"index": {"_index": self.index, "_id": v["id"] }})
+            body.append(v)
+
+        self.es.bulk(index=self.index, body= body)
+
+        return values
 
     def patch(self, id:str, value: dict[str, Any]):
         self.does_exist(id)

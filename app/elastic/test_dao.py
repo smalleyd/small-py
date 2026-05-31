@@ -3,6 +3,7 @@ from typing import Any
 from urllib.error import HTTPError
 
 from .dao import BaseDAO
+from ..elastic import tester
 from datetime import datetime, timedelta
 from elasticsearch import (
     Elasticsearch,
@@ -13,7 +14,8 @@ from ..models.person import Person, PersonSearchRequest
 
 class TestBaseDAO(BaseDAO[Person, PersonSearchRequest]):
     def __init__(self, es: Elasticsearch):
-        super().__init__(es, "person", Person)
+        super().__init__(es, "person", Person,
+            {"properties":{"id":{"type":"keyword"},"email":{"type":"keyword","normalizer":"lowercase"},"name":{"type":"text"},"created_at":{"type":"date"},"updated_at":{"type":"date"}}})
         self.before_save_exists:bool | None = None
 
     def before_save(self, id:str, value: dict[str, Any], exists: bool) -> dict[str, Any]:
@@ -27,20 +29,20 @@ class TestBaseDAO(BaseDAO[Person, PersonSearchRequest]):
         if f.name:
             o.append({"match": {"name": { "query": f.name, "fuzziness": "AUTO" }}})
         if f.email:
-            o.append({"term": {"email.keyword": f.email}})
+            o.append({"term": {"email": f.email}})
 
         return {"bool": {"must": o}}
 
 class BaseDAOTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        client = cls.es = BaseDAO.connect()
-        # cls.dao = BaseDAO[Person, PersonSearchRequest](client, "person", Person)
-        cls.dao = TestBaseDAO(client)
-
         cls.value = None
         cls.scroll_id = None
         cls.initial_count = 0
+        cls.es = tester.client
+        cls.dao = TestBaseDAO(tester.client)
+
+        TestBaseDAO(tester.client)  # Do a second time to test the update of the index mappings.
 
     def setUp(self):
         self.dao = BaseDAOTest.dao
@@ -51,6 +53,7 @@ class BaseDAOTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         if cls.es: cls.es.close()
+        if tester.container: tester.container.stop()
 
     def tearDown(self):
         self.dao.refresh()
@@ -68,11 +71,9 @@ class BaseDAOTest(unittest.TestCase):
     def test_00_connect_invalid(self, args: dict[str, Any], exception: type[BaseException]):
         self.assertFalse(BaseDAO.connect(**args).ping())
 
-    def test_00_total_size_in_bytes(self):
-        self.assertLess(300000, self.dao.total_size_in_bytes())
-
     def test_00_create(self):
-        BaseDAOTest.initial_count = self.dao.count(PersonSearchRequest())
+        self.assertEqual(0, self.dao.count(PersonSearchRequest()), "Check intial count");
+
         value = BaseDAOTest.value = self.dao.add(Person(id="test-person-1", name="First Person", email="first@test.com"))
 
         self.assertIsNotNone(value, "Exists")
@@ -122,8 +123,18 @@ class BaseDAOTest(unittest.TestCase):
     def test_00_get_created_at(self, id:str, expected: datetime | None):
         self.assertEqual(expected, self.dao.get_created_at(id))
 
+    def test_00_load(self):
+        self.dao.load([{"id": f"test-people-{i}", "name": f"People {i}", "email": f"{i}@test.com"} for i in range(1, 11)])
+        self.dao.refresh()
+        BaseDAOTest.initial_count = 10
+
     def test_00_ping(self):
         self.assertTrue(self.dao.ping())
+
+    def test_00_total_size_in_bytes(self):
+        bytes = self.dao.total_size_in_bytes()
+        self.assertLess(10000, bytes)
+        self.assertGreater(20000, bytes)
 
     @parameterized.expand([
         (PersonSearchRequest(ids=["test-person-1"]), 1),
@@ -168,7 +179,7 @@ class BaseDAOTest(unittest.TestCase):
         self.assertIsNone(value.email, "Check email")
 
     def test_10_search_paging(self):
-        results = self.dao.search(PersonSearchRequest(), from_=5, size=5, sort=["created_at:Desc", "name:Asc"])
+        results = self.dao.search(PersonSearchRequest(), from_=0, size=5, sort=["created_at:Desc", "name:Asc"])
         self.assertIsNotNone(results, "Check results")
         self.assertEqual(self.initial_count + 1, results.total, "Check results.total")
         self.assertIsNone(results.scroll_id, "Check results.scroll_id")
