@@ -89,12 +89,11 @@ class BaseDAO(Generic[E, F]):
         try:
             resp = self.es.get(index=self.index,
                 id=id,
-                source_includes=["created_at"])
-            if not resp["found"]: return None
+                source_includes=[self.field_created_at])
+
+            return resp["_source"].get(self.field_created_at, None) if resp["found"] else None
         except NotFoundError:
             return None
-
-        return resp["_source"].get(self.field_created_at, None)
 
     def add(self, value: E) -> E:
         self.es.index(index=self.index, id=value.id, document=value.__dict__)
@@ -110,7 +109,7 @@ class BaseDAO(Generic[E, F]):
             body.append({"index": {"_index": self.index, "_id": v["id"] }})
             body.append(v)
 
-        self.es.bulk(index=self.index, body= body)
+        self.es.bulk(index=self.index, body=body)
 
         return values
 
