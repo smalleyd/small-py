@@ -10,12 +10,21 @@ from elasticsearch import (
     NotFoundError
 )
 from parameterized import parameterized
-from ..models.person import Person, PersonSearchRequest
+from ..models.person import Person, PersonSearchRequest, Role
+
+minute = timedelta(minutes=1)
 
 class TestBaseDAO(BaseDAO[Person, PersonSearchRequest]):
     def __init__(self, es: Elasticsearch):
-        super().__init__(es, "person", Person,
-            {"properties":{"id":{"type":"keyword"},"email":{"type":"keyword","normalizer":"lowercase"},"name":{"type":"text"},"created_at":{"type":"date"},"updated_at":{"type":"date"}}})
+        super().__init__(es, "person", Person,{"properties":{
+            "id": {"type": "keyword"},
+            "email": {"type": "keyword","normalizer": "lowercase"},
+            "name": {"type": "text"},
+            "role": {"type": "keyword"},
+            "tags": {"type": "keyword"},
+            "created_at":{"type":"date"},
+            "updated_at":{"type":"date"}
+        }})
         self.before_save_exists:bool | None = None
 
     def before_save(self, id:str, value: dict[str, Any], exists: bool) -> dict[str, Any]:
@@ -30,6 +39,12 @@ class TestBaseDAO(BaseDAO[Person, PersonSearchRequest]):
             o.append({"match": {"name": { "query": f.name, "fuzziness": "AUTO" }}})
         if f.email:
             o.append({"term": {"email": f.email}})
+        if f.role:
+            o.append({"term": {"role": f.role.value}})
+        if f.tags:
+            o.append({"terms": {"tags": f.tags}})
+
+        self.range_query(o, "created_at", f.created_at_from, f.created_at_to)
 
         return {"bool": {"must": o}}
 
@@ -74,12 +89,14 @@ class BaseDAOTest(unittest.TestCase):
     def test_00_create(self):
         self.assertEqual(0, self.dao.count(PersonSearchRequest()), "Check intial count");
 
-        value = BaseDAOTest.value = self.dao.add(Person(id="test-person-1", name="First Person", email="first@test.com"))
+        value = BaseDAOTest.value = self.dao.add(Person(id="test-person-1", name="First Person", email="first@test.com", role=Role.ADMIN, tags={"monday", "tuesday", "wednesday"}))
 
         self.assertIsNotNone(value, "Exists")
         self.assertEqual("test-person-1", value.id, "Check id")
         self.assertEqual("First Person", value.name, "Check name")
         self.assertEqual("first@test.com", value.email, "Check email")
+        self.assertEqual(Role.ADMIN, value.role, "Check role")
+        self.assertEqual({"monday", "tuesday", "wednesday"}, value.tags, "Check tags")
         self.assertIsNone(value.created_at, "Check created_at")
         self.assertIsNone(value.updated_at, "Check updated_at")
         self.assertIsNone(self.dao.before_save_exists, "Check dao_before_save_exists")
@@ -90,6 +107,8 @@ class BaseDAOTest(unittest.TestCase):
         self.assertEqual("test-person-1", value.id, "Check id")
         self.assertEqual("First Person", value.name, "Check name")
         self.assertEqual("first@test.com", value.email, "Check email")
+        self.assertEqual(Role.ADMIN, value.role, "Check role")
+        self.assertEqual({"monday", "tuesday", "wednesday"}, value.tags, "Check tags")
         self.assertIsNone(value.created_at, "Check created_at")
         self.assertIsNone(value.updated_at, "Check updated_at")
 
@@ -142,7 +161,11 @@ class BaseDAOTest(unittest.TestCase):
         (PersonSearchRequest(name="\"First Person\""), 1),
         (PersonSearchRequest(name="totally-invalid"), 0),
         (PersonSearchRequest(email="first@test.com"), 1),
-        (PersonSearchRequest(email="invalid@test.com"), 0)
+        (PersonSearchRequest(email="invalid@test.com"), 0),
+        (PersonSearchRequest(role=Role.ADMIN), 1),
+        (PersonSearchRequest(role=Role.USER), 0),
+        (PersonSearchRequest(tags=["sunday","tuesday","thursday"]), 1),
+        (PersonSearchRequest(tags=["sunday","Tuesday","thursday"]), 0)
     ])
     def test_10_search(self, f: PersonSearchRequest, expected: int):
         results = self.dao.search(f)
@@ -256,6 +279,26 @@ class BaseDAOTest(unittest.TestCase):
         self.assertTrue(self.dao.before_save_exists, "Check dao_before_save_exists")
 
         BaseDAOTest.value = value
+
+    @parameterized.expand([
+        (PersonSearchRequest(created_at_from=datetime.now() + minute), 0),
+        (PersonSearchRequest(created_at_from=datetime.now() - minute), 1),
+        (PersonSearchRequest(created_at_to=datetime.now() + minute), 1),
+        (PersonSearchRequest(created_at_to=datetime.now() - minute), 0),
+        (PersonSearchRequest(created_at_from=datetime.now() - minute, created_at_to=datetime.now() + minute), 1),
+        (PersonSearchRequest(created_at_from=datetime.now() + minute, created_at_to=datetime.now() - minute), 0)
+    ])
+    def test_30_upsert_search(self, f: PersonSearchRequest, expected: int):
+        results = self.dao.search(f)
+        self.assertIsNotNone(results, "Check results")
+        self.assertEqual(expected, results.total, "Check results.total")
+        self.assertIsNone(results.scroll_id, "Check results.scroll_id")
+        self.assertIsNotNone(results.scores, "Check results.scores")
+        self.assertEqual(expected, len(results.scores), "Check results.scores.size")
+
+        values = results.data
+        self.assertIsNotNone(values, "Exists")
+        self.assertEqual(expected, len(values), "Check size")
 
     def test_40_patch(self):
         self.dao.patch("test-person-1", {"name": "Person First X"})

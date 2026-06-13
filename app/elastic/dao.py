@@ -1,4 +1,5 @@
 from os import getenv
+from enum import Enum
 from datetime import datetime
 from urllib.error import HTTPError
 from dataclasses import dataclass, field
@@ -96,7 +97,7 @@ class BaseDAO(Generic[E, F]):
             return None
 
     def add(self, value: E) -> E:
-        self.es.index(index=self.index, id=value.id, document=value.__dict__)
+        self.es.index(index=self.index, id=value.id, document=self.to_dict(value))
 
         return value
 
@@ -144,8 +145,8 @@ class BaseDAO(Generic[E, F]):
         :param value:
         :return: the supplied value
         """
-        v = value.__dict__
         now = datetime.now()
+        v = self.to_dict(value)
         v[self.field_updated_at] = now
         created_at = self.get_created_at(value.id)  # Do NOT update the created_at field if it already exists.
         exists = created_at is not None
@@ -205,11 +206,20 @@ class BaseDAO(Generic[E, F]):
         """Derived class must implement this method to handle its search request."""
         return {"match_all": {}}
 
-    def empty(self, filter: F) -> bool:
+    @staticmethod
+    def empty(filter: F) -> bool:
         for v in filter.__dict__.values():
             if v:
                 return False
         return True
+
+    @staticmethod
+    def range_query(query: list[dict[str, Any]], field: str, from_: Any, to_: Any):
+        if from_ or to_:
+            q = {}
+            if from_: q["gte"] = from_
+            if to_: q["lte"] = to_
+            query.append({"range": {field: q}})
 
     def total_size_in_bytes(self) -> int:
         return self.es.indices.stats(index=self.index, metric="store")["_all"]["total"]["store"]["total_data_set_size_in_bytes"]
@@ -223,3 +233,13 @@ class BaseDAO(Generic[E, F]):
     def field_updated_at(self) -> str:
         """Derived class can optionally override."""
         return "updated_at"
+
+    def to_dict(self, o) -> Any:
+        if isinstance(o, Enum):
+            return o.value
+        if hasattr(o, "__dict__"):
+            return {k: self.to_dict(v) for (k, v) in o.__dict__.items() }
+        if isinstance(o, list) or isinstance(o, tuple) or isinstance(o, set):   # CanNOT use Sequence because that includes str.
+            return [self.to_dict(v) for v in o]
+
+        return o
