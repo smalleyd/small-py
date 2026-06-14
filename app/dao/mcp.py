@@ -10,7 +10,7 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
             "properties":{
                 "id": {"type": "keyword"},
                 "name": {"type": "text", "fields": {"keyword": {"type": "keyword", "normalizer":"lowercase"}}},
-                "slug": {"type": "keyword"},
+                "slug": {"type": "keyword", "normalizer":"lowercase"},
                 "description": {"type": "text"},
                 "api_key": {"type": "keyword"},
                 "tools":{"properties":{
@@ -32,6 +32,8 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
                 "archived_at": {"type": "date"}
             }
         })
+
+        self.filter_has_archived_at = {"exists": {"field": "archived_at"}}
 
     def archive(self, id: str):
         now = datetime.now()
@@ -55,9 +57,11 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
         self.range_query(o, "created_at", f.created_at_from, f.created_at_to)
         self.range_query(o, "updated_at", f.updated_at_from, f.updated_at_to)
         self.range_query(o, "archived_at", f.archived_at_from, f.archived_at_to)
+
         if f.has_archived_at is not None:
-            q = {"exists": {"field": "archived_at"}}
-            if f.has_archived_at: o.append(q)
-            else: nots.append(q)
+            if f.has_archived_at:
+                o.append(self.filter_has_archived_at)
+            else:
+                nots.append(self.filter_has_archived_at)
 
         return {"bool": {"must": o, "must_not": nots}}

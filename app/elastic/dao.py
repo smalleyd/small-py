@@ -98,7 +98,7 @@ class BaseDAO(Generic[E, F]):
             return None
 
     def add(self, value: E) -> E:
-        self.es.index(index=self.index, id=value.id, document=self.to_dict(value))
+        self.es.index(index=self.index, id=value.id, document=self.to_dict(value), refresh="wait_for")
 
         return value
 
@@ -128,7 +128,7 @@ class BaseDAO(Generic[E, F]):
         self.es.indices.refresh(index=self.index)
 
     def remove(self, id:str) -> None:
-        self.es.delete(index=self.index, id=id)
+        self.es.delete(index=self.index, id=id, refresh="wait_for")
 
     def set(self, id:str, field:str, value:Any | None, updated_at: datetime | None = None):
         self.does_exist(id)
@@ -137,7 +137,7 @@ class BaseDAO(Generic[E, F]):
         self.update(id, {field: value, self.field_updated_at: updated_at})
 
     def update(self, id:str, value: dict[str, Any]) -> None:
-        self.es.update(index=self.index, id=id, doc=value)
+        self.es.update(index=self.index, id=id, doc=value, refresh="wait_for")
 
     def upsert(self, value: E) -> E:
         """
@@ -154,7 +154,7 @@ class BaseDAO(Generic[E, F]):
         exists = created_at is not None
         v[self.field_created_at] = created_at if exists else now
 
-        self.es.index(index=self.index, id=value.id, document=self.before_save(value.id, v, exists))
+        self.es.index(index=self.index, id=value.id, document=self.before_save(value.id, v, exists), refresh="wait_for")
 
         return self.clazz(**v)
 
@@ -211,7 +211,7 @@ class BaseDAO(Generic[E, F]):
     @staticmethod
     def empty(filter: F) -> bool:
         for v in filter.__dict__.values():
-            if v:
+            if v is not None:
                 return False
         return True
 
