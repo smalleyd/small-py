@@ -1,4 +1,5 @@
 from typing import Any
+from datetime import datetime
 from ..elastic.dao import BaseDAO
 from elasticsearch import Elasticsearch
 from ..models.mcp import Mcp, McpSearchRequest
@@ -31,6 +32,10 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
                 "archived_at": {"type": "date"}
             }
         })
+
+    def archive(self, id: str):
+        now = datetime.now()
+        super().set(id, "archived_at", now, now)
 
     def _build_query(self, f: McpSearchRequest) -> dict[str, Any]:
         o = []
