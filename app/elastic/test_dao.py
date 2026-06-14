@@ -67,8 +67,10 @@ class BaseDAOTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        if cls.es: cls.es.close()
-        if tester.container: tester.container.stop()
+        """Do NOT close anything as these Elastic components can be used by other tests."""
+        pass
+        # if cls.es: cls.es.close()
+        # if tester.container: tester.container.stop() Do NOT stop because it can be used in other tests.
 
     def tearDown(self):
         self.dao.refresh()

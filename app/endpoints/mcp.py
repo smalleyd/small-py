@@ -1,14 +1,14 @@
 from uuid import uuid4
-from typing import Annotated, Any
+from typing import Any
 from fastapi import APIRouter, Body, Depends, Query
-from ..datasource import es
-from ..dao.mcp import McpDAO
+from ..dao.startup import mcp_dao
 from ..elastic.dao import Results
 from .helpers import do_patch_validation
 from ..models.mcp import *
 from ..security import auth
 
-dao = McpDAO(es)
+dao = mcp_dao
+
 router = APIRouter(prefix="/mcp", tags=["MCP"], dependencies=[Depends(auth)])
 
 @router.get("/{id}", response_model_exclude_none=True)
