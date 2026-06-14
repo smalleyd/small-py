@@ -130,8 +130,9 @@ class BaseDAO(Generic[E, F]):
     def remove(self, id:str) -> None:
         self.es.delete(index=self.index, id=id)
 
-    def set(self, id:str, field:str, value:Any | None, updated_at: datetime = datetime.now()):
+    def set(self, id:str, field:str, value:Any | None, updated_at: datetime | None = None):
         self.does_exist(id)
+        if updated_at is None: updated_at = datetime.now()
 
         self.update(id, {field: value, self.field_updated_at: updated_at})
 
