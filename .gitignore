@@ -1,6 +1,7 @@
 .venv
 .idea
 .coverage
+.fastapicloud
 
 htmlcov
 __pycache__
