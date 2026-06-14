@@ -183,7 +183,7 @@ class BaseDAO(Generic[E, F]):
             scores={hit["_id"]: hit["_score"] for hit in hits}
         )
 
-    def scroll(self, id:str, time:str="30s") -> Results[E]:
+    def scroll(self, id: str, time: str = "30s") -> Results[E]:
         return self._results(self.es.scroll(scroll_id=id,scroll=time))
 
     def search(self,

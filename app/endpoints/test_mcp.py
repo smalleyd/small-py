@@ -4,6 +4,7 @@ from ..elastic.dao import Results
 from fastapi.testclient import TestClient
 from ..main import app
 from ..models.mcp import Mcp
+from ..dao.startup import mcp_dao
 from parameterized import parameterized
 from datetime import datetime, timedelta
 
@@ -206,6 +207,42 @@ class TestMcpEndpoints(unittest.TestCase):
 
         if expected == 1:
             self.assertEqual("mcp-1", value.data[0]["id"], "Check ID")
+
+    def test_60_load(self):
+        v = []
+        for i in range(2, 11):
+            VALUE["id"] = f"mcp-{i}"
+            VALUE["name"] = f"MCP {i}"
+            VALUE["slug"] = f"slug-{i}"
+            v.append(VALUE.copy())
+
+        mcp_dao.load(v)
+        mcp_dao.refresh()
+
+    def test_60_load_find(self):
+        response = client.get("/mcp", params={"size": 5, "scroll": "30s"})
+        self.assertEqual(200, response.status_code, "Check status_code")
+
+        value = Results[Mcp](**response.json())
+        self.assertEqual(10, value.total, "Check total")
+        self.assertEqual(5, len(value.data), "Check data")
+        self.assertIsNotNone(value.scroll_id, "Check scroll_id")
+
+        response = client.get(f"/mcp/scroll/{value.scroll_id}")
+        self.assertEqual(200, response.status_code, "Check status_code")
+
+        value = Results[Mcp](**response.json())
+        self.assertEqual(10, value.total, "Check total")
+        self.assertEqual(5, len(value.data), "Check data")
+        self.assertIsNotNone(value.scroll_id, "Check scroll_id")
+
+        response = client.get(f"/mcp/scroll/{value.scroll_id}")
+        self.assertEqual(200, response.status_code, "Check status_code")
+
+        value = Results[Mcp](**response.json())
+        self.assertEqual(10, value.total, "Check total")
+        self.assertEqual(0, len(value.data), "Check data")
+        self.assertIsNone(value.scroll_id, "Check scroll_id")
 
 if __name__ == '__main__':
     unittest.main()

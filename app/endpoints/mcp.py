@@ -19,6 +19,10 @@ async def get(id: str) -> Mcp:
 async def find(value: Annotated[McpSearchRequest, Query()]) -> Results[Mcp]:
     return dao.search(value)
 
+@router.get("/scroll/{id}", response_model_exclude_none=True)
+async def scroll(id: str, time: str = "30s") -> Results[Mcp]:
+    return dao.scroll(id, time)
+
 @router.post("/", status_code=201)
 async def add(value: Mcp) -> Mcp:
     if not value.id: value.id = uuid4().hex
