@@ -1,6 +1,7 @@
 from enum import Enum
 from datetime import datetime
 from pydantic import BaseModel
+from ..elastic.dao import Filter
 
 class AccessToken(BaseModel):
   access_token: str
@@ -19,7 +20,7 @@ class Person(BaseModel):
   created_at: datetime | None = None
   updated_at: datetime | None = None
 
-class PersonSearchRequest(BaseModel):
+class PersonSearchRequest(Filter):
   ids: list[str] | None = None
   name: str | None = None
   email: str | None = None

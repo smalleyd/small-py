@@ -158,21 +158,22 @@ class BaseDAOTest(unittest.TestCase):
         self.assertGreater(20000, bytes)
 
     @parameterized.expand([
-        (PersonSearchRequest(ids=["test-person-1"]), 1),
-        (PersonSearchRequest(ids=["test-person-1-invalid"]), 0),
-        (PersonSearchRequest(name="\"First Person\""), 1),
-        (PersonSearchRequest(name="totally-invalid"), 0),
-        (PersonSearchRequest(email="first@test.com"), 1),
-        (PersonSearchRequest(email="invalid@test.com"), 0),
-        (PersonSearchRequest(role=Role.ADMIN), 1),
-        (PersonSearchRequest(role=Role.USER), 0),
-        (PersonSearchRequest(tags=["sunday","tuesday","thursday"]), 1),
-        (PersonSearchRequest(tags=["sunday","Tuesday","thursday"]), 0)
+        (PersonSearchRequest(ids=["test-person-1"]), 1, 1),
+        (PersonSearchRequest(ids=["test-person-1"], page=2), 0, 1),
+        (PersonSearchRequest(ids=["test-person-1-invalid"]), 0, 0),
+        (PersonSearchRequest(name="\"First Person\""), 1, 1),
+        (PersonSearchRequest(name="totally-invalid"), 0, 0),
+        (PersonSearchRequest(email="first@test.com"), 1, 1),
+        (PersonSearchRequest(email="invalid@test.com"), 0, 0),
+        (PersonSearchRequest(role=Role.ADMIN), 1, 1),
+        (PersonSearchRequest(role=Role.USER), 0, 0),
+        (PersonSearchRequest(tags=["sunday","tuesday","thursday"]), 1, 1),
+        (PersonSearchRequest(tags=["sunday","Tuesday","thursday"]), 0, 0)
     ])
-    def test_10_search(self, f: PersonSearchRequest, expected: int):
+    def test_10_search(self, f: PersonSearchRequest, expected: int, total: int):
         results = self.dao.search(f)
         self.assertIsNotNone(results, "Check results")
-        self.assertEqual(expected, results.total, "Check results.total")
+        self.assertEqual(total, results.total, "Check results.total")
         self.assertIsNone(results.scroll_id, "Check results.scroll_id")
         self.assertIsNotNone(results.scores, "Check results.scores")
         self.assertEqual(expected, len(results.scores), "Check results.scores.size")
@@ -204,7 +205,7 @@ class BaseDAOTest(unittest.TestCase):
         self.assertIsNone(value.email, "Check email")
 
     def test_10_search_paging(self):
-        results = self.dao.search(PersonSearchRequest(), from_=0, size=5, sort=["created_at:Desc", "name:Asc"])
+        results = self.dao.search(PersonSearchRequest(page=1, size=5, sort=["created_at:Desc", "name:Asc"]))
         self.assertIsNotNone(results, "Check results")
         self.assertEqual(self.initial_count + 1, results.total, "Check results.total")
         self.assertIsNone(results.scroll_id, "Check results.scroll_id")
@@ -216,7 +217,7 @@ class BaseDAOTest(unittest.TestCase):
         self.assertEqual(5, len(values), "Check size")
 
     def test_10_search_scroll(self):
-        results = self.dao.search(PersonSearchRequest(), size=5, scroll="30s", sort=["created_at:Desc"])
+        results = self.dao.search(PersonSearchRequest(size=5, scroll="30s", sort=["created_at:Desc"]))
         self.assertIsNotNone(results, "Check results")
         self.assertEqual(self.initial_count + 1, results.total, "Check results.total")
         self.assertIsNotNone(results.scroll_id, "Check results.scroll_id")

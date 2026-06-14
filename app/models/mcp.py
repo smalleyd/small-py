@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Annotated
 from datetime import datetime
-# from dataclasses import dataclass
+from ..elastic.dao import Filter
 from pydantic import BaseModel, ConfigDict, Field
 
 class AuthType(Enum):
@@ -54,7 +54,7 @@ class Mcp(BaseModel):
     updated_at: datetime | None = None
     archived_at: datetime | None = None
 
-class McpSearchRequest(BaseModel):
+class McpSearchRequest(Filter):
     model_config = ConfigDict(extra="forbid")
 
     ids: list[str] | None = None

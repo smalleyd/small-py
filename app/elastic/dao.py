@@ -1,10 +1,9 @@
 from os import getenv
-from enum import Enum
 from datetime import datetime
-from pydantic import BaseModel
 from urllib.error import HTTPError
+from pydantic import BaseModel, Field
 from dataclasses import dataclass, field
-from typing import Any, Generic, TypeVar
+from typing import Annotated, Any, Generic, TypeVar
 
 from elastic_transport._response import ObjectApiResponse
 from elasticsearch import (
@@ -12,8 +11,17 @@ from elasticsearch import (
     NotFoundError
 )
 
+class Filter(BaseModel):
+    page: Annotated[int, Field(ge=1, le=100)] = 1
+    size: Annotated[int, Field(ge=1, le=1000)] = 10
+    sort: Annotated[list[str], Field(min_length=1, max_length=10)] = ["created_at:Desc"]
+    scroll: Annotated[str | None, Field(min_length=1, max_length=1000)] = None
+
+    def from_page(self) -> int:
+        return (self.page - 1) * self.size
+
 E = TypeVar("E", bound=BaseModel)
-F = TypeVar("F")
+F = TypeVar("F", bound=Filter)
 
 @dataclass
 class Results(Generic[E]):
@@ -164,11 +172,12 @@ class BaseDAO(Generic[E, F]):
     def _results(self, resp: ObjectApiResponse[Any]) -> Results[E]:
         hits_ = resp["hits"]
         hits = hits_["hits"]
+        total = hits_["total"]["value"]
         if not hits:
-            return Results[E]()
+            return Results[E](total=total)
 
         return Results(
-            total=hits_["total"]["value"],
+            total=total,
             scroll_id=resp["_scroll_id"] if "_scroll_id" in resp else None,
             data=[self.clazz(**hit["_source"]) for hit in hits],
             scores={hit["_id"]: hit["_score"] for hit in hits}
@@ -179,21 +188,16 @@ class BaseDAO(Generic[E, F]):
 
     def search(self,
         filter_: F,
-        *,
-        from_: int = 0,
-        size: int = 20,
-        scroll: str | None = None,
-        sort: list[str] | None = None,
         source_exclude_vectors: bool = True,
         source_excludes: list[str] | None = None,
         source_includes: list[str] | None = None
     ) -> Results[E]:
         return self._results(self.es.search(
             index=self.index,
-            from_=from_,
-            size=size,
-            scroll=scroll,
-            sort=sort,
+            from_=filter_.from_page(),
+            size=filter_.size,
+            scroll=filter_.scroll,
+            sort=filter_.sort,
             track_scores=True,
             track_total_hits=True,
             source_excludes=source_excludes,
@@ -209,9 +213,9 @@ class BaseDAO(Generic[E, F]):
         return {"match_all": {}}
 
     @staticmethod
-    def empty(filter: F) -> bool:
-        for v in filter.__dict__.values():
-            if v is not None:
+    def empty(filter_: F) -> bool:
+        for k, v in filter_.__dict__.items():
+            if k not in ["page", "size", "sort", "scroll"] and v is not None:
                 return False
         return True
 
