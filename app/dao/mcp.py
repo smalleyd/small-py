@@ -34,6 +34,7 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
 
     def _build_query(self, f: McpSearchRequest) -> dict[str, Any]:
         o = []
+        nots = []
         if f.ids:
             o.append({"ids": {"values": f.ids}})
         if f.name:
@@ -46,8 +47,12 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
             o.append({"match": {"tools.name": { "query": f.tools_name, "fuzziness": "AUTO" }}})
         if f.tools_description:
             o.append({"match": {"tools.description": { "query": f.tools_description, "fuzziness": "AUTO" }}})
-        self.range_query(o, "created_at", f.created_at_from or f.created_at_to)
-        self.range_query(o, "updated_at", f.updated_at_from or f.updated_at_to)
-        self.range_query(o, "archived_at", f.archived_at_from or f.archived_at_to)
+        self.range_query(o, "created_at", f.created_at_from, f.created_at_to)
+        self.range_query(o, "updated_at", f.updated_at_from, f.updated_at_to)
+        self.range_query(o, "archived_at", f.archived_at_from, f.archived_at_to)
+        if f.has_archived_at is not None:
+            q = {"exists": {"field": "archived_at"}}
+            if f.has_archived_at: o.append(q)
+            else: nots.append(q)
 
-        return {"bool": {"must": o}}
+        return {"bool": {"must": o, "must_not": nots}}

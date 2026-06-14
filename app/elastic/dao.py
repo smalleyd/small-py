@@ -1,6 +1,7 @@
 from os import getenv
 from enum import Enum
 from datetime import datetime
+from pydantic import BaseModel
 from urllib.error import HTTPError
 from dataclasses import dataclass, field
 from typing import Any, Generic, TypeVar
@@ -11,7 +12,7 @@ from elasticsearch import (
     NotFoundError
 )
 
-E = TypeVar("E")
+E = TypeVar("E", bound=BaseModel)
 F = TypeVar("F")
 
 @dataclass
@@ -235,6 +236,9 @@ class BaseDAO(Generic[E, F]):
         return "updated_at"
 
     def to_dict(self, o) -> Any:
+        """
+        NOT needed as long as E is a BaseModel.
+
         if isinstance(o, Enum):
             return o.value
         if hasattr(o, "__dict__"):
@@ -243,3 +247,5 @@ class BaseDAO(Generic[E, F]):
             return [self.to_dict(v) for v in o]
 
         return o
+        """
+        return o.model_dump(mode="json")
