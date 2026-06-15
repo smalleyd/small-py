@@ -158,6 +158,15 @@ class BaseDAOTest(unittest.TestCase):
         self.assertGreater(20000, bytes)
 
     @parameterized.expand([
+        ({"match_all":{}}, 5, 5),
+        ({"ids":{"values":["test-people-3", "test-people-100", "test-people-6", "test-people-200", "test-people-9"]}}, 100, 3),
+        ({"ids": {"values": ["test-people-300", "test-people-100", "test-people-600", "test-people-200", "test-people-900"]}}, 100, 0)
+    ])
+    def test_10_ids(self, query: dict[str, Any], size: int, expected: int):
+        value = self.dao.ids(query, size)
+        self.assertEqual(expected, len(value), "Check length")
+
+    @parameterized.expand([
         (PersonSearchRequest(ids=["test-person-1"]), 1, 1),
         (PersonSearchRequest(ids=["test-person-1"], page=2), 0, 1),
         (PersonSearchRequest(ids=["test-person-1-invalid"]), 0, 0),

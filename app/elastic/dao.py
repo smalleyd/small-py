@@ -169,6 +169,12 @@ class BaseDAO(Generic[E, F]):
     def count(self, filter: F) -> int:
         return self.es.count(index=self.index, query=self.build_query(filter)).body["count"]
 
+    def ids(self, query: dict[str, Any], size: int) -> list[str]:
+        resp = self.es.search(index=self.index, query=query, size=size, from_=0, source=False)
+        hits = resp["hits"]["hits"]
+
+        return [hit["_id"] for hit in hits] if hits else []
+
     def _results(self, resp: ObjectApiResponse[Any]) -> Results[E]:
         hits_ = resp["hits"]
         hits = hits_["hits"]
