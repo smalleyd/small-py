@@ -29,8 +29,12 @@ async def add(value: Mcp) -> Mcp:
     return dao.upsert(value)
 
 @router.put("/")
-async def update(value: Mcp) -> Mcp:
+async def set(value: Mcp) -> Mcp:
     return await add(value)
+
+@router.put("/{id}/tools", status_code=204)
+async def set_tools(id: str, values: list[Tool]):
+    dao.set_tools(id, values)
 
 @router.patch("/{id}")
 async def patch(id: str, value: Annotated[dict[str, Any], Body(min_length=1)]) -> Mcp:

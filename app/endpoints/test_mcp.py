@@ -12,35 +12,35 @@ client = TestClient(app, headers={"Authorization": "Bearer token-1"})
 minutesAgo = datetime.now() - timedelta(minutes=5)
 minutesAhead = datetime.now() + timedelta(minutes=5)
 
+TOOL = {
+  "name": "First",
+  "description": "Number one",
+  "input_schema": {
+    "key-1": "value 1",
+    "key-2": "value 2"
+  },
+  "execution_config": {
+    "url": "https://something.io/api",
+    "method": "PUT",
+    "headers": {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+      "Authorization": "Bearer one-1"
+    },
+    "body_template": "body template 1",
+    "authentication": "ApiKey"
+  },
+  "response_transform": "response 1",
+  "timeout_ms": 5000
+}
+
 VALUE = {
   "id": "mcp-1",
   "name": "Test 1",
   "slug": "test-1",
   "description": "Test One",
   "api_key": "test_1",
-  "tools": [
-    {
-      "name": "First",
-      "description": "Number one",
-      "input_schema": {
-        "key-1": "value 1",
-        "key-2": "value 2"
-      },
-      "execution_config": {
-        "url": "https://something.io/api",
-        "method": "PUT",
-        "headers": {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-          "Authorization": "Bearer one-1"
-        },
-        "body_template": "body template 1",
-        "authentication": "ApiKey"
-      },
-      "response_transform": "response 1",
-      "timeout_ms": 5000
-    }
-  ]
+  "tools": [ TOOL ]
 }
 
 class TestMcpEndpoints(unittest.TestCase):
@@ -74,6 +74,8 @@ class TestMcpEndpoints(unittest.TestCase):
         value = Mcp(**response.json())
         self.assertEqual("mcp-1", value.id, "Check ID")
         self.assertEqual("Test 1", value.name, "Check name")
+        self.assertEqual(1, len(value.tools), "Check tools")
+        self.assertEqual("First", value.tools[0].name, "Check tools[0].name")
         self.assertIsNone(value.archived_at, "Check archived_at")
         self.assertIsNotNone(value.created_at, "Check created_at")
         self.assertEqual(value.created_at, value.updated_at, "Check updated_at")
@@ -243,6 +245,20 @@ class TestMcpEndpoints(unittest.TestCase):
         self.assertEqual(10, value.total, "Check total")
         self.assertEqual(0, len(value.data), "Check data")
         self.assertIsNone(value.scroll_id, "Check scroll_id")
+
+    def test_70_set_tools(self):
+        TOOL["name"] = "Tool 1"
+        response = client.put("/mcp/mcp-1/tools", json=[TOOL])
+        self.assertEqual(204, response.status_code, "Check status_code")
+
+    def test_70_set_tools_get(self):
+        response = client.get("/mcp/mcp-1")
+        self.assertEqual(200, response.status_code, "Check status_code")
+
+        value = Mcp(**response.json())
+        self.assertIsNotNone(value, "Exists")
+        self.assertEqual(1, len(value.tools), "Check tools")
+        self.assertEqual("Tool 1", value.tools[0].name, "Check tools[0].name")
 
 if __name__ == '__main__':
     unittest.main()

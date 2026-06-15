@@ -2,7 +2,7 @@ from typing import Any
 from datetime import datetime
 from ..elastic.dao import BaseDAO
 from elasticsearch import Elasticsearch
-from ..models.mcp import Mcp, McpSearchRequest
+from ..models.mcp import Mcp, McpSearchRequest, Tool
 
 class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
     def __init__(self, es: Elasticsearch):
@@ -38,6 +38,10 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
     def archive(self, id: str):
         now = datetime.now()
         super().set(id, "archived_at", now, now)
+
+    def set_tools(self, id: str, values: list[Tool]):
+        v = [i.model_dump(mode="json") for i in values]
+        super().set(id, "tools", v)
 
     def _build_query(self, f: McpSearchRequest) -> dict[str, Any]:
         o = []
