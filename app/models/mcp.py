@@ -41,7 +41,7 @@ class Mcp(BaseModel):
 
     id: Annotated[str | None, Field(min_length=1, max_length=200)] = None
     name: Annotated[str, Field(min_length=1, max_length=500)]
-    slug: Annotated[str, Field(min_length=1, max_length=60)]
+    slug: Annotated[str, Field(min_length=1, max_length=60, pattern="^[\\w\\-]+$")]
     description: Annotated[str | None, Field(min_length=1, max_length=5000)] = None
     api_key: Annotated[str, Field(min_length=1, max_length=100)]
     tools: list[Tool]
