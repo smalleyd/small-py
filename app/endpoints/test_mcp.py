@@ -126,6 +126,24 @@ class TestMcpEndpoints(unittest.TestCase):
         self.assertIsNotNone(value.created_at, "Check created_at")
         self.assertLess(value.created_at, value.updated_at, "Check updated_at")
 
+    def test_030_patch_fail(self):
+        response = client.patch("/mcp/mcp-1", json={"name": "a" * 501})
+        self.assertEqual(422, response.status_code, "Check status_code")
+
+        value = response.json()
+        print("VALUE:", value)
+        expected = {"detail": [{
+            "type": "string_too_long",
+            "loc": ["name"],
+            "msg": "String should have at most 500 characters",
+            "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "ctx": {"max_length": 500},
+            "url": "https://errors.pydantic.dev/2.13/v/string_too_long"
+        }]}
+
+        self.assertIsNotNone(value, "Exists")
+        self.assertEqual(expected, value, "Check value")
+
     def test_030_patch_get(self):
         response = client.get("/mcp/mcp-1")
         self.assertEqual(200, response.status_code, "Check status_code")
@@ -224,10 +242,11 @@ class TestMcpEndpoints(unittest.TestCase):
     def test_60_load(self):
         v = []
         for i in range(2, 11):
-            VALUE["id"] = f"mcp-{i}"
-            VALUE["name"] = f"MCP {i}"
-            VALUE["slug"] = f"slug-{i}"
-            v.append(VALUE.copy())
+            value = VALUE.copy()
+            value["id"] = f"mcp-{i}"
+            value["name"] = f"MCP {i}"
+            value["slug"] = f"slug-{i}"
+            v.append(value)
 
         mcp_dao.load(v)
         mcp_dao.refresh()
