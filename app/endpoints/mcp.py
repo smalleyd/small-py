@@ -43,5 +43,5 @@ async def patch(id: str, value: Annotated[dict[str, Any], Body(min_length=1)]) -
     return dao.get(id)
 
 @router.delete("/{id}", status_code=204)
-async def delete(id: str) -> None:
+async def archive(id: str) -> None:
     dao.archive(id)
