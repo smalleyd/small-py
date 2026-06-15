@@ -14,15 +14,13 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
                 "description": {"type": "text"},
                 "api_key": {"type": "keyword"},
                 "tools": {"properties":{
+                    "method": {"type": "keyword"},
                     "name": {"type": "text"},
                     "description": {"type": "text"},
+                    "url": {"type": "keyword", "normalizer":"lowercase"},
+                    "headers": {"type": "flattened"},
+                    "body_template": {"type": "text"},
                     "input_schema": {"type": "flattened"},
-                    "execution_config": {"properties":{
-                        "url": {"type": "keyword", "normalizer":"lowercase"},
-                        "method": {"type": "keyword"},
-                        "headers": {"type": "flattened"},
-                        "body_template": {"type": "text"}
-                    }},
                     "response_transform": {"type": "text"},
                     "timeout_ms": {"type": "long"}
                 }},

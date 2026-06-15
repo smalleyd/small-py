@@ -13,24 +13,22 @@ minutesAgo = datetime.now() - timedelta(minutes=5)
 minutesAhead = datetime.now() + timedelta(minutes=5)
 
 TOOL = {
-  "name": "First",
-  "description": "Number one",
-  "input_schema": {
-    "key-1": "value 1",
-    "key-2": "value 2"
-  },
-  "execution_config": {
-    "url": "https://something.io/api",
     "method": "PUT",
+    "name": "First",
+    "description": "Number one",
+    "url": "https://something.io/api",
     "headers": {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-      "Authorization": "Bearer one-1"
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer one-1"
     },
     "body_template": "body template 1",
-  },
-  "response_transform": "response 1",
-  "timeout_ms": 5000
+    "input_schema": {
+        "key-1": "value 1",
+        "key-2": "value 2"
+    },
+    "response_transform": "response 1",
+    "timeout_ms": 5000
 }
 
 VALUE = {
