@@ -25,7 +25,7 @@ class ExecutionConfig(BaseModel):
 
     url: Annotated[str, Field(pattern="^(http|https)://[\\w\\.\\-/!:#?=&%,@]+$")]
     method: Method
-    headers: dict[str, str]
+    headers: Annotated[dict[str, str], Field(min_length=1, max_length=20)]
     body_template: Annotated[str | None, Field(min_length=1, max_length=50000)] = None
     authentication: AuthType | None = None
 
@@ -35,7 +35,7 @@ class Tool(BaseModel):
 
     name: Annotated[str, Field(min_length=1, max_length=200)]
     description: Annotated[str, Field(min_length=1, max_length=10000)]
-    input_schema: dict[str, str]
+    input_schema: Annotated[dict[str, str], Field(min_length=1, max_length=100)]
     execution_config: ExecutionConfig
     response_transform: Annotated[str, Field(min_length=1, max_length=10000)]
     timeout_ms: Annotated[int, Field(ge=0, le=20000)]
