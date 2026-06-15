@@ -13,7 +13,7 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
                 "slug": {"type": "keyword", "normalizer":"lowercase"},
                 "description": {"type": "text"},
                 "api_key": {"type": "keyword"},
-                "tools":{"properties":{
+                "tools": {"properties":{
                     "name": {"type": "text"},
                     "description": {"type": "text"},
                     "input_schema": {"type": "flattened"},
@@ -21,11 +21,14 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
                         "url": {"type": "keyword", "normalizer":"lowercase"},
                         "method": {"type": "keyword"},
                         "headers": {"type": "flattened"},
-                        "body_template": {"type": "text"},
-                        "authentication": {"type": "keyword"}
+                        "body_template": {"type": "text"}
                     }},
                     "response_transform": {"type": "text"},
                     "timeout_ms": {"type": "long"}
+                }},
+                "authentication": {"properties":{
+                    "type": {"type": "keyword"},
+                    "url": {"type": "keyword", "normalizer": "lowercase"}
                 }},
                 "created_at": {"type": "date"},
                 "updated_at": {"type": "date"},
@@ -34,6 +37,7 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
         })
 
         self.filter_has_archived_at = {"exists": {"field": "archived_at"}}
+        self.filter_has_authentication = {"exists": {"field": "authentication"}}
 
     def archive(self, id: str):
         now = datetime.now()
@@ -58,6 +62,15 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
             o.append({"match": {"tools.name": { "query": f.tools_name, "fuzziness": "AUTO" }}})
         if f.tools_description:
             o.append({"match": {"tools.description": { "query": f.tools_description, "fuzziness": "AUTO" }}})
+        if f.authentication_type:
+            o.append({"term": {"authentication.type": f.authentication_type.value}})
+        if f.authentication_url:
+            o.append({"term": {"authentication.url": f.authentication_url}})
+        if f.has_authentication is not None:
+            if f.has_authentication:
+                o.append(self.filter_has_authentication)
+            else:
+                nots.append(self.filter_has_authentication)
         self.range_query(o, "created_at", f.created_at_from, f.created_at_to)
         self.range_query(o, "updated_at", f.updated_at_from, f.updated_at_to)
         self.range_query(o, "archived_at", f.archived_at_from, f.archived_at_to)

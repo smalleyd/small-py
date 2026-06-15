@@ -19,7 +19,10 @@ class Method(Enum):
     OPTIONS = 'OPTIONS'
     TRACE = 'TRACE'
 
-# @dataclass
+class Authentication(BaseModel):
+    type: AuthType
+    url: Annotated[str, Field(pattern="^(http|https)://[\\w\\.\\-/!:#?=&%,@]+$")]
+
 class ExecutionConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -27,9 +30,7 @@ class ExecutionConfig(BaseModel):
     method: Method
     headers: Annotated[dict[str, str], Field(min_length=1, max_length=20)]
     body_template: Annotated[str | None, Field(min_length=1, max_length=50000)] = None
-    authentication: AuthType | None = None
 
-# @dataclass
 class Tool(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -40,7 +41,6 @@ class Tool(BaseModel):
     response_transform: Annotated[str, Field(min_length=1, max_length=10000)]
     timeout_ms: Annotated[int, Field(ge=0, le=20000)]
 
-# @dataclass
 class Mcp(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -50,6 +50,7 @@ class Mcp(BaseModel):
     description: Annotated[str | None, Field(min_length=1, max_length=5000)] = None
     api_key: Annotated[str, Field(min_length=1, max_length=100)]
     tools: list[Tool]
+    authentication: Authentication | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
     archived_at: datetime | None = None
@@ -63,6 +64,9 @@ class McpSearchRequest(Filter):
     description: str | None = None
     tools_name: str | None = None
     tools_description: str | None = None
+    authentication_type: AuthType | None = None
+    authentication_url: str | None = None
+    has_authentication: bool | None = None
     created_at_from: datetime | None = None
     created_at_to: datetime | None = None
     updated_at_from: datetime | None = None

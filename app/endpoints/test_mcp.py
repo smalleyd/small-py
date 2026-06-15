@@ -28,7 +28,6 @@ TOOL = {
       "Authorization": "Bearer one-1"
     },
     "body_template": "body template 1",
-    "authentication": "ApiKey"
   },
   "response_transform": "response 1",
   "timeout_ms": 5000
@@ -40,7 +39,11 @@ VALUE = {
   "slug": "test-1",
   "description": "Test One",
   "api_key": "test_1",
-  "tools": [ TOOL ]
+  "tools": [ TOOL ],
+  "authentication": {
+      "type": "ApiKey",
+      "url": "https://something.io/login"
+  }
 }
 
 class TestMcpEndpoints(unittest.TestCase):
@@ -147,6 +150,14 @@ class TestMcpEndpoints(unittest.TestCase):
         ({"tools_name": "first"}, 1),
         ({"tools_description": "zero"}, 0),
         ({"tools_description": "One"}, 1),
+        ({"authentication_type": "ApiKey"}, 1),
+        ({"authentication_type": "Bearer"}, 0),
+        ({"authentication_type": "Basic"}, 0),
+        ({"authentication_url": "https://something.io/login"}, 1),
+        ({"authentication_url": "https://something.io/Login"}, 1),
+        ({"authentication_url": "https://something.io/auth"}, 0),
+        ({"has_authentication": True}, 1),
+        ({"has_authentication": False}, 0),
         ({"created_at_from": minutesAhead}, 0),
         ({"created_at_from": minutesAgo}, 1),
         ({"created_at_to": minutesAhead}, 1),
