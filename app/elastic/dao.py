@@ -1,9 +1,9 @@
 from os import getenv
 from datetime import datetime
 from urllib.error import HTTPError
-from pydantic import BaseModel, Field
 from dataclasses import dataclass, field
 from typing import Annotated, Any, Generic, TypeVar
+from pydantic import BaseModel, Field, ValidationError
 
 from elastic_transport._response import ObjectApiResponse
 from elasticsearch import (
@@ -113,6 +113,15 @@ class BaseDAO(Generic[E, F]):
     def before_save(self, id:str, value: dict[str, Any], exists: bool) -> dict[str, Any]:
         return value
 
+    def check_dupe(self, id: str, value: dict[str, Any]):
+        q = self._build_unique_key_query(value)
+        if q is not None:
+            ids_ = self.ids(q, 1)
+            if ids_ and id != ids_[0]:
+                raise (ValidationError
+                    .from_exception_data(title="The {0} is already in use by another {1}.".format(self.unique_key, self.index),
+                        line_errors=[]))
+
     def load(self, values: list[dict[str, Any]]) -> list[dict[str, Any]]:
         body = []
         for v in values:
@@ -125,6 +134,7 @@ class BaseDAO(Generic[E, F]):
 
     def patch(self, id:str, value: dict[str, Any]):
         self.does_exist(id)
+        self.check_dupe(id, value)
 
         if "id" in value: del value["id"]
         if self.field_created_at in value: del value[self.field_created_at]
@@ -155,8 +165,10 @@ class BaseDAO(Generic[E, F]):
         :param value:
         :return: the supplied value
         """
-        now = datetime.now()
         v = self.to_dict(value)
+        self.check_dupe(value.id, v)
+
+        now = datetime.now()
         v[self.field_updated_at] = now
         created_at = self.get_created_at(value.id)  # Do NOT update the created_at field if it already exists.
         exists = created_at is not None
@@ -214,9 +226,13 @@ class BaseDAO(Generic[E, F]):
     def build_query(self, filter: F) -> dict[str, Any]:
         return {"match_all": {}} if self.empty(filter) else self._build_query(filter)
 
-    def _build_query(self, filter: F) -> dict[str, Any]:
+    def _build_query(self, filter_: F) -> dict[str, Any]:
         """Derived class must implement this method to handle its search request."""
         return {"match_all": {}}
+
+    def _build_unique_key_query(self, value: dict[str, Any]) -> dict[str, Any] | None:
+        """Derived class should implement if checking for duplicate records is necessary."""
+        return None
 
     @staticmethod
     def empty(filter_: F) -> bool:
@@ -245,6 +261,10 @@ class BaseDAO(Generic[E, F]):
     def field_updated_at(self) -> str:
         """Derived class can optionally override."""
         return "updated_at"
+
+    @property
+    def unique_key(self) -> str:
+        return "name"
 
     def to_dict(self, o) -> Any:
         """

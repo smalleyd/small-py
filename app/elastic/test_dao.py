@@ -1,6 +1,7 @@
 import unittest
 from typing import Any
 from urllib.error import HTTPError
+from pydantic import ValidationError
 
 from .dao import BaseDAO
 from ..elastic import tester
@@ -47,6 +48,16 @@ class TestBaseDAO(BaseDAO[Person, PersonSearchRequest]):
         self.range_query(o, "created_at", f.created_at_from, f.created_at_to)
 
         return {"bool": {"must": o}}
+
+    def _build_unique_key_query(self, value: dict[str, Any]) -> dict[str, Any] | None:
+        if "email" not in value:
+            return None
+
+        return {"term": {"email": value["email"]}}
+
+    @property
+    def unique_key(self) -> str:
+        return "email"
 
 class BaseDAOTest(unittest.TestCase):
     @classmethod
@@ -121,6 +132,12 @@ class BaseDAOTest(unittest.TestCase):
 
     def test_00_create_doesNotExist(self):
         self.assertRaises(HTTPError, lambda: self.dao.does_exist("test-person-2"))
+
+    def test_00_create_dupe(self):
+        self.assertEqual(1, self.dao.count(PersonSearchRequest()), "Check intial count");
+
+        self.assertRaises(ValidationError,
+            lambda: self.dao.upsert(Person(id="test-person-1-dupe", name="First Person Dupe", email="first@test.com", role=Role.ADMIN, tags={"monday", "tuesday", "wednesday"})))
 
     def test_00_create_exists(self):
         self.assertTrue(self.dao.exists("test-person-1"), "Check exists")
