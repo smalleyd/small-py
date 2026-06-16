@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from ..main import app
 from ..models.mcp import Mcp
 from ..dao.startup import mcp_dao
+from ..models.common import Result
 from parameterized import parameterized
 from datetime import datetime, timedelta
 
@@ -90,6 +91,18 @@ class TestMcpEndpoints(unittest.TestCase):
         self.assertIsNone(value.archived_at, "Check archived_at")
         self.assertIsNotNone(value.created_at, "Check created_at")
         self.assertEqual(value.created_at, value.updated_at, "Check updated_at")
+
+    @parameterized.expand([
+        ("slug-1", False),
+        ("test-1", True)
+    ])
+    def test_010_post_has_slug(self, slug: str, expected: bool):
+        response = client.get(f"/mcp/slugs/{slug}/exists")
+        self.assertEqual(200, response.status_code, "Check status_code")
+
+        result = Result[bool](**response.json())
+        self.assertIsNotNone(result, "Check result")
+        self.assertEqual(expected, result.value, "Check result.value")
 
     def test_020_put(self):
         VALUE["name"] = "Name 1"

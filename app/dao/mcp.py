@@ -41,6 +41,9 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
         now = datetime.now()
         super().set(id, "archived_at", now, now)
 
+    def has_slug(self, value: str) -> bool:
+        return 0 < self._count({"term": {"slug": value}})
+
     def set_tools(self, id: str, values: list[Tool]):
         v = [i.model_dump(mode="json") for i in values]
         super().set(id, "tools", v)

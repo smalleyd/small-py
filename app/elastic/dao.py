@@ -179,8 +179,11 @@ class BaseDAO(Generic[E, F]):
 
         return self.clazz(**v)
 
-    def count(self, filter: F) -> int:
-        return self.es.count(index=self.index, query=self.build_query(filter)).body["count"]
+    def count(self, filter_: F) -> int:
+        return self._count(self.build_query(filter_))
+
+    def _count(self, query: dict[str, Any]) -> int:
+        return self.es.count(index=self.index, query=query).body["count"]
 
     def ids(self, query: dict[str, Any], size: int) -> list[str]:
         resp = self.es.search(index=self.index, query=query, size=size, from_=0, source=False)

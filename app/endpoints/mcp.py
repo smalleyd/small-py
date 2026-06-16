@@ -3,6 +3,7 @@ from typing import Any
 from fastapi import APIRouter, Body, Depends, Query
 from ..dao.startup import mcp_dao
 from ..elastic.dao import Results
+from ..models.common import Result
 from .helpers import do_patch_validation
 from ..models.mcp import *
 from ..security import auth
@@ -22,6 +23,10 @@ async def find(value: Annotated[McpSearchRequest, Query()]) -> Results[Mcp]:
 @router.get("/scroll/{id}", response_model_exclude_none=True)
 async def scroll(id: str, time: str = "30s") -> Results[Mcp]:
     return dao.scroll(id, time)
+
+@router.get("/slugs/{slug}/exists")
+async def has_slug(slug: str) -> Result[bool]:
+    return Result[bool](value=dao.has_slug(slug))
 
 @router.post("/", status_code=201)
 async def add(value: Mcp) -> Mcp:
