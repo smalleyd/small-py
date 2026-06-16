@@ -154,6 +154,14 @@ class BaseDAOTest(unittest.TestCase):
     def test_00_field_updated_at(self):
         self.assertEqual("updated_at", self.dao.field_updated_at)
 
+    def test_00_get_by_query_fail(self):
+        self.assertRaises(HTTPError, lambda: self.dao.get_by_query({"term": {"email": "first@test.co"}}))
+
+    def test_00_get_by_query_success(self):
+        value = self.dao.get_by_query({"term": {"email": "FIRST@test.com"}})
+        self.assertIsNotNone(value, "Exists")
+        self.assertEqual("test-person-1", value.id, "Check ID")
+
     @parameterized.expand([
         ("test-person-1", None),
         ("test-person-2", None)

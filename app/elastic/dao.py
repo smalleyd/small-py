@@ -185,6 +185,15 @@ class BaseDAO(Generic[E, F]):
     def _count(self, query: dict[str, Any]) -> int:
         return self.es.count(index=self.index, query=query).body["count"]
 
+    def get_by_query(self, query: dict[str, Any]) -> E:
+        resp = self.es.search(index=self.index, query=query, size=1, from_=0)
+        hits = resp["hits"]["hits"]
+
+        if not hits:
+            raise HTTPError(code=404, msg="Could not find.", url="ES:exists", hdrs={}, fp=None)
+
+        return self.clazz(**hits[0]["_source"])
+
     def ids(self, query: dict[str, Any], size: int) -> list[str]:
         resp = self.es.search(index=self.index, query=query, size=size, from_=0, source=False)
         hits = resp["hits"]["hits"]
