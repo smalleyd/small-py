@@ -104,6 +104,18 @@ class TestMcpEndpoints(unittest.TestCase):
         self.assertIsNotNone(result, "Check result")
         self.assertEqual(expected, result.value, "Check result.value")
 
+    def test_010_post_get_by_slug_fail(self):
+        response = client.get("/mcp/slugs/slug-1")
+        self.assertEqual(404, response.status_code, "Check status_code")
+
+    def test_010_post_get_by_slug_success(self):
+        response = client.get("/mcp/slugs/test-1")
+        self.assertEqual(200, response.status_code, "Check status_code")
+
+        value = Mcp(**response.json())
+        self.assertIsNotNone(value, "Exists")
+        self.assertEqual("mcp-1", value.id, "Check ID")
+
     def test_020_put(self):
         VALUE["name"] = "Name 1"
 

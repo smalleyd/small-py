@@ -24,6 +24,10 @@ async def find(value: Annotated[McpSearchRequest, Query()]) -> Results[Mcp]:
 async def scroll(id: str, time: str = "30s") -> Results[Mcp]:
     return dao.scroll(id, time)
 
+@router.get("/slugs/{slug}", response_model_exclude_none=True)
+async def get_by_slug(slug: str) -> Mcp:
+    return dao.get_by_slug(slug)
+
 @router.get("/slugs/{slug}/exists")
 async def has_slug(slug: str) -> Result[bool]:
     return Result[bool](value=dao.has_slug(slug))

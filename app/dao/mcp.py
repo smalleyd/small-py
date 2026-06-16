@@ -41,6 +41,9 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
         now = datetime.now()
         super().set(id, "archived_at", now, now)
 
+    def get_by_slug(self, value: str) -> Mcp:
+        return self.get_by_query({"term": {"slug": value}})
+
     def has_slug(self, value: str) -> bool:
         return 0 < self._count({"term": {"slug": value}})
 
