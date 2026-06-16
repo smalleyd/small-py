@@ -68,6 +68,16 @@ class TestMcpEndpoints(unittest.TestCase):
         self.assertIsNotNone(value.created_at, "Check created_at")
         self.assertEqual(value.created_at, value.updated_at, "Check updated_at")
 
+    def test_010_post_dupe(self):
+        value = VALUE.copy()
+        value["id"] = "mcp-0"
+        response = client.post("/mcp", json=value)
+        self.assertEqual(422, response.status_code, "Check status_code")
+
+        results = response.json()
+        self.assertIsNotNone(results, "Check results")
+        self.assertEqual({"detail":[], "title": "The slug is already in use by another mcp."}, results, "Check results")
+
     def test_010_post_get(self):
         response = client.get("/mcp/mcp-1")
         self.assertEqual(200, response.status_code, "Check status_code")
@@ -137,7 +147,7 @@ class TestMcpEndpoints(unittest.TestCase):
             "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "ctx": {"max_length": 500},
             "url": "https://errors.pydantic.dev/2.13/v/string_too_long"
-        }]}
+        }], "title": "Patch Error"}
 
         self.assertIsNotNone(value, "Exists")
         self.assertEqual(expected, value, "Check value")

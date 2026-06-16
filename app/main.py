@@ -23,7 +23,7 @@ async def handle_not_found_error(request: Request, exc: NotFoundError) -> JSONRe
 
 @app.exception_handler(ValidationError) # Needed for BaseModel.model_validate calls in PATCH methods.
 async def handle_validation_error(request: Request, exc: ValidationError) -> JSONResponse:
-  return JSONResponse(status_code=422, content={"detail": exc.errors()})
+  return JSONResponse(status_code=422, content={"detail": exc.errors(), "title": exc.title})
 
 @app.get("/", response_model_exclude_unset=True, tags=["Main"])
 async def root() -> dict[str, Any]:

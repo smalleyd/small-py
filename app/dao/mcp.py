@@ -80,3 +80,13 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
                 nots.append(self.filter_has_archived_at)
 
         return {"bool": {"must": o, "must_not": nots}}
+
+    def _build_unique_key_query(self, value: dict[str, Any]) -> dict[str, Any] | None:
+        if "slug" not in value:
+            return None
+
+        return {"term":{"slug": value["slug"]}}
+
+    @property
+    def unique_key(self) -> str:
+        return "slug"
