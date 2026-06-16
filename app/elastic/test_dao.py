@@ -11,7 +11,7 @@ from elasticsearch import (
     NotFoundError
 )
 from parameterized import parameterized
-from ..models.person import Person, PersonSearchRequest, Role
+from .test_models import Person, PersonSearchRequest, Role
 
 minute = timedelta(minutes=1)
 
