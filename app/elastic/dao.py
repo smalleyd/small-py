@@ -42,6 +42,7 @@ class BaseDAO(Generic[E, F]):
         self.es = es
         self.index = index
         self.clazz = clazz
+        self.unique_key_message = "The {0} is already in use by another {1}.".format(self.unique_key, self.index)
 
         if mappings is not None:
             indices = es.indices
@@ -119,7 +120,7 @@ class BaseDAO(Generic[E, F]):
             ids_ = self.ids(q, 1)
             if ids_ and id != ids_[0]:
                 raise (ValidationError
-                    .from_exception_data(title="The {0} is already in use by another {1}.".format(self.unique_key, self.index),
+                    .from_exception_data(title=self.unique_key_message,
                         line_errors=[]))
 
     def load(self, values: list[dict[str, Any]]) -> list[dict[str, Any]]:
