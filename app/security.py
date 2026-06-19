@@ -1,3 +1,3 @@
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import APIKeyHeader
 
-auth = OAuth2PasswordBearer(tokenUrl="people/auth")
+auth = APIKeyHeader(name="X-Contextly-Key")

@@ -2,13 +2,13 @@ import unittest
 from typing import Any
 from ..main import app
 from ..elastic.dao import Results
+from ..models.person import Person
 from ..dao.startup import person_dao
 from parameterized import parameterized
 from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
-from ..models.person import AccessToken, Person
 
-client = TestClient(app, headers={"Authorization": "Bearer token-1"})
+client = TestClient(app, headers={"X-Contextly-Key": "token-1"})
 minutesAgo = datetime.now() - timedelta(minutes=5)
 minutesAhead = datetime.now() + timedelta(minutes=5)
 
@@ -27,24 +27,6 @@ class PersonEndpointsTest(unittest.TestCase):
 
     def setUp(self):
         self.scroll_id = PersonEndpointsTest.scroll_id
-
-    def test_000_authenticate_fail(self):
-        response = client.post("/people/auth",
-            data={"username": "API", "password": "token-123"},
-            headers={"Content-Type": "application/x-www-form-urlencoded"})
-        self.assertEqual(422, response.status_code, "Check status_code")
-        self.assertEqual({"detail": "Invalid credentials"}, response.json(), "Check results")
-
-    def test_000_authenticate_success(self):
-        response = client.post("/people/auth",
-            data={"username": "api", "password": "token-123"},
-            headers={"Content-Type": "application/x-www-form-urlencoded"})
-        self.assertEqual(200, response.status_code, "Check status_code")
-
-        value = AccessToken(**response.json())
-        self.assertIsNotNone(value, "Exists")
-        self.assertEqual("token-123", value.access_token, "Check access_token")
-        self.assertEqual("bearer", value.token_type, "Check token_type")
 
     def test_000_find(self):
         response = client.get("/people")

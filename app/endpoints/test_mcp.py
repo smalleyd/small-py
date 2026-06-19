@@ -9,7 +9,7 @@ from ..models.common import Result
 from parameterized import parameterized
 from datetime import datetime, timedelta
 
-client = TestClient(app, headers={"Authorization": "Bearer token-1"})
+client = TestClient(app, headers={"X-Contextly-Key": "token-1"})
 minutesAgo = datetime.now() - timedelta(minutes=5)
 minutesAhead = datetime.now() + timedelta(minutes=5)
 

@@ -2,10 +2,6 @@ from datetime import datetime
 from pydantic import BaseModel
 from ..elastic.dao import Filter
 
-class AccessToken(BaseModel):
-  access_token: str
-  token_type: str = "bearer"
-
 class Person(BaseModel):
   id: str
   email: str
