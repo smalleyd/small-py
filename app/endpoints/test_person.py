@@ -6,7 +6,7 @@ from ..dao.startup import person_dao
 from parameterized import parameterized
 from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
-from ..models.person import AccessToken, Person, PersonSearchRequest
+from ..models.person import AccessToken, Person
 
 client = TestClient(app, headers={"Authorization": "Bearer token-1"})
 minutesAgo = datetime.now() - timedelta(minutes=5)
