@@ -2,11 +2,11 @@ import unittest
 from typing import Any
 from ..main import app
 from ..elastic.dao import Results
-from ..models.person import Person
 from ..dao.startup import person_dao
 from parameterized import parameterized
 from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
+from ..models.person import Person, PersonSearchRequest, Type
 
 client = TestClient(app, headers={"X-Contextly-Key": "token-1"})
 minutesAgo = datetime.now() - timedelta(minutes=5)
@@ -99,13 +99,14 @@ class PersonEndpointsTest(unittest.TestCase):
         self.assertEqual("First One", value.first_name, "Check first_name")
         self.assertEqual("Last 1", value.last_name, "Check last_name")
         self.assertEqual("Name 1", value.name, "Check name")
+        self.assertEquals(Type.USER, value.type, "Check type")
         self.assertIsNone(value.archived_at, "Check archived_at")
         self.assertIsNone(value.auth_at, "Check auth_at")
         self.assertIsNotNone(value.created_at, "Check created_at")
         self.assertLess(value.created_at, value.updated_at, "Check updated_at")
 
     def test_020_patch(self):
-        response = client.patch("/people/person-1", json={"last_name": "Last One"})
+        response = client.patch("/people/person-1", json={"last_name": "Last One", "type": "admin"})
         self.assertEqual(200, response.status_code, "Check status_code")
 
     def test_020_patch_get(self):
@@ -119,6 +120,7 @@ class PersonEndpointsTest(unittest.TestCase):
         self.assertEqual("First One", value.first_name, "Check first_name")
         self.assertEqual("Last One", value.last_name, "Check last_name")
         self.assertEqual("Name 1", value.name, "Check name")
+        self.assertEqual(Type.ADMIN, value.type, "Check type")
         self.assertIsNone(value.archived_at, "Check archived_at")
         self.assertIsNone(value.auth_at, "Check auth_at")
         self.assertIsNotNone(value.created_at, "Check created_at")
@@ -136,6 +138,8 @@ class PersonEndpointsTest(unittest.TestCase):
         ({"last_name": "Two"}, 0),
         ({"name": "name"}, 1),
         ({"name": "test"}, 0),
+        ({"type": "admin"}, 1),
+        ({"type": "user"}, 0),
         ({"archived_at_from": minutesAgo}, 0),
         ({"archived_at_to": minutesAhead}, 0),
         ({"has_archived_at": True}, 0),
@@ -217,11 +221,25 @@ class PersonEndpointsTest(unittest.TestCase):
 
     def test_070_load(self):
         person_dao.load([
-            {"id": f"person-{i}", "email": f"email{i}@test.com", "first_name": f"First {i}", "last_name": f"Last {i}", "name": f"Name {i}"}
+            {
+                "id": f"person-{i}",
+                "email": f"email{i}@test.com",
+                "first_name": f"First {i}",
+                "last_name": f"Last {i}",
+                "name": f"Name {i}",
+                "type": Type.ADMIN.value if 0 == (i % 2) else Type.USER.value
+            }
             for i in range(2, 11)
         ])
 
         person_dao.refresh()
+
+    @parameterized.expand([
+        (PersonSearchRequest(type=Type.USER), 4),
+        (PersonSearchRequest(type=Type.ADMIN), 6)
+    ])
+    def test_070_load_count(self, filter_: PersonSearchRequest, expected: int):
+        self.assertEqual(expected, person_dao.count(filter_))
 
     def test_070_load_find(self):
         response = client.get("/people", params={"size": 5, "scroll": "30s"})

@@ -15,6 +15,7 @@ class PersonDAO(BaseDAO[Person, PersonSearchRequest]):
                 "first_name": {"type": "text", "fields": {"keyword": {"type": "keyword", "normalizer": "lowercase"}}},
                 "last_name": {"type": "text", "fields": {"keyword": {"type": "keyword", "normalizer": "lowercase"}}},
                 "name": {"type": "text", "fields": {"keyword": {"type": "keyword", "normalizer": "lowercase"}}},
+                "type": {"type": "keyword"},
                 "created_at": {"type": "date"},
                 "updated_at": {"type": "date"},
                 "archived_at": {"type": "date"},
@@ -51,6 +52,8 @@ class PersonDAO(BaseDAO[Person, PersonSearchRequest]):
             must.append({"match": {"last_name": { "query": f.last_name, "fuzziness": "AUTO" }}})
         if f.name:
             must.append({"match": {"name": { "query": f.name, "fuzziness": "AUTO" }}})
+        if f.type:
+            must.append({"term": {"type": f.type.value}})
 
         self.range_query(must, "created_at", f.created_at_from, f.created_at_to)
         self.range_query(must, "updated_at", f.updated_at_from, f.updated_at_to)
