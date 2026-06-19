@@ -1,14 +1,15 @@
+from typing import Annotated
 from datetime import datetime
-from pydantic import ConfigDict
+from pydantic import ConfigDict, Field
 from ..elastic.dao import Entity, Filter
 
 class Person(Entity):
     model_config = ConfigDict(extra="forbid")
 
-    email: str
-    first_name: str
-    last_name: str
-    name: str
+    email: Annotated[str, Field(pattern="^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")]
+    first_name: Annotated[str, Field(min_length=1, max_length=50)]
+    last_name: Annotated[str, Field(min_length=1, max_length=50)]
+    name: Annotated[str, Field(min_length=1, max_length=105)]
     created_at: datetime | None = None
     updated_at: datetime | None = None
     archived_at: datetime | None = None
