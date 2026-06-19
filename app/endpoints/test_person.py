@@ -73,6 +73,16 @@ class PersonEndpointsTest(unittest.TestCase):
         self.assertIsNotNone(value.created_at, "Check created_at")
         self.assertEqual(value.created_at, value.updated_at, "Check updated_at")
 
+    def test_010_post_dupe(self):
+        value = VALUE.copy()
+        value["id"] = "person-0"
+        response = client.post("/people", json=value)
+        self.assertEqual(422, response.status_code, "Check status_code")
+
+        results = response.json()
+        self.assertIsNotNone(results, "Check results")
+        self.assertEqual({"detail":[], "title": "The email is already in use by another person_."}, results, "Check results")
+
     def test_010_post_get(self):
         response = client.get("/people/person-1")
         self.assertEqual(200, response.status_code, "Check status_code")
