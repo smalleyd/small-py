@@ -1,3 +1,4 @@
+import atexit
 from elasticsearch import Elasticsearch
 from testcontainers.elasticsearch import ElasticSearchContainer
 
@@ -5,3 +6,9 @@ container = ElasticSearchContainer("docker.elastic.co/elasticsearch/elasticsearc
 host = container.get_container_host_ip()
 port = container.get_exposed_port(9200)
 client = Elasticsearch(f"http://{host}:{port}")
+
+def on_exit():
+    if client: client.close()
+    if container: container.stop()
+
+atexit.register(on_exit)

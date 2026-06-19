@@ -51,41 +51,46 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
         v = [i.model_dump(mode="json") for i in values]
         super().set(id, "tools", v)
 
+    def before_save(self, id: str, value: dict[str, Any], exists: bool) -> dict[str, Any]:
+        if "archived_at" in value: del value["archived_at"] # Should only be set by the archive method. DLS on 6/16/2026.
+
+        return value
+
     def _build_query(self, f: McpSearchRequest) -> dict[str, Any]:
-        o = []
-        nots = []
+        must = []
+        must_not = []
         if f.ids:
-            o.append({"ids": {"values": f.ids}})
+            must.append({"ids": {"values": f.ids}})
         if f.name:
-            o.append({"match": {"name": { "query": f.name, "fuzziness": "AUTO" }}})
+            must.append({"match": {"name": { "query": f.name, "fuzziness": "AUTO" }}})
         if f.slug:
-            o.append({"term": {"slug": f.slug}})
+            must.append({"term": {"slug": f.slug}})
         if f.description:
-            o.append({"match": {"description": { "query": f.description, "fuzziness": "AUTO" }}})
+            must.append({"match": {"description": { "query": f.description, "fuzziness": "AUTO" }}})
         if f.tools_name:
-            o.append({"match": {"tools.name": { "query": f.tools_name, "fuzziness": "AUTO" }}})
+            must.append({"match": {"tools.name": { "query": f.tools_name, "fuzziness": "AUTO" }}})
         if f.tools_description:
-            o.append({"match": {"tools.description": { "query": f.tools_description, "fuzziness": "AUTO" }}})
+            must.append({"match": {"tools.description": { "query": f.tools_description, "fuzziness": "AUTO" }}})
         if f.authentication_type:
-            o.append({"term": {"authentication.type": f.authentication_type.value}})
+            must.append({"term": {"authentication.type": f.authentication_type.value}})
         if f.authentication_url:
-            o.append({"term": {"authentication.url": f.authentication_url}})
+            must.append({"term": {"authentication.url": f.authentication_url}})
         if f.has_authentication is not None:
             if f.has_authentication:
-                o.append(self.filter_has_authentication)
+                must.append(self.filter_has_authentication)
             else:
-                nots.append(self.filter_has_authentication)
-        self.range_query(o, "created_at", f.created_at_from, f.created_at_to)
-        self.range_query(o, "updated_at", f.updated_at_from, f.updated_at_to)
-        self.range_query(o, "archived_at", f.archived_at_from, f.archived_at_to)
+                must_not.append(self.filter_has_authentication)
+        self.range_query(must, "created_at", f.created_at_from, f.created_at_to)
+        self.range_query(must, "updated_at", f.updated_at_from, f.updated_at_to)
+        self.range_query(must, "archived_at", f.archived_at_from, f.archived_at_to)
 
         if f.has_archived_at is not None:
             if f.has_archived_at:
-                o.append(self.filter_has_archived_at)
+                must.append(self.filter_has_archived_at)
             else:
-                nots.append(self.filter_has_archived_at)
+                must_not.append(self.filter_has_archived_at)
 
-        return {"bool": {"must": o, "must_not": nots}}
+        return {"bool": {"must": must, "must_not": must_not}}
 
     def _build_unique_key_query(self, value: dict[str, Any]) -> dict[str, Any] | None:
         if "slug" not in value:

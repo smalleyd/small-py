@@ -111,7 +111,7 @@ class BaseDAO(Generic[E, F]):
 
         return value
 
-    def before_save(self, id:str, value: dict[str, Any], exists: bool) -> dict[str, Any]:
+    def before_save(self, id: str, value: dict[str, Any], exists: bool) -> dict[str, Any]:
         return value
 
     def check_dupe(self, id: str, value: dict[str, Any]):
