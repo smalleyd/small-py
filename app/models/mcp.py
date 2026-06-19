@@ -1,7 +1,7 @@
 from enum import Enum
 from datetime import datetime
-from ..elastic.dao import Filter
 from typing import Annotated, Any
+from ..elastic.dao import Entity, Filter
 from pydantic import BaseModel, ConfigDict, Field
 
 class AuthType(Enum):
@@ -20,6 +20,8 @@ class Method(Enum):
     TRACE = 'TRACE'
 
 class Authentication(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     type: AuthType
     url: Annotated[str, Field(pattern="^(http|https)://[\\w\\.\\-/!:#?=&%,@]+$")]
 
@@ -36,10 +38,9 @@ class Tool(BaseModel):
     response_transform: Annotated[str, Field(min_length=1, max_length=10000)]
     timeout_ms: Annotated[int, Field(ge=0, le=20000)]
 
-class Mcp(BaseModel):
+class Mcp(Entity):
     model_config = ConfigDict(extra="forbid")
 
-    id: Annotated[str | None, Field(min_length=1, max_length=200)] = None
     name: Annotated[str, Field(min_length=1, max_length=500)]
     slug: Annotated[str, Field(min_length=1, max_length=60, pattern="^[\\w\\-]+$")]
     description: Annotated[str | None, Field(min_length=1, max_length=5000)] = None

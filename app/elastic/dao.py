@@ -1,4 +1,5 @@
 from os import getenv
+from uuid import uuid4
 from datetime import datetime
 from urllib.error import HTTPError
 from dataclasses import dataclass, field
@@ -11,6 +12,9 @@ from elasticsearch import (
     NotFoundError
 )
 
+class Entity(BaseModel):
+    id: Annotated[str, Field(min_length=4, max_length=100)] = field(default_factory=lambda: uuid4().hex)
+
 class Filter(BaseModel):
     page: Annotated[int, Field(ge=1, le=100)] = 1
     size: Annotated[int, Field(ge=1, le=1000)] = 10
@@ -20,7 +24,7 @@ class Filter(BaseModel):
     def from_page(self) -> int:
         return (self.page - 1) * self.size
 
-E = TypeVar("E", bound=BaseModel)
+E = TypeVar("E", bound=Entity)
 F = TypeVar("F", bound=Filter)
 
 @dataclass
@@ -94,7 +98,7 @@ class BaseDAO(Generic[E, F]):
             source_includes=includes)
         o = resp.get("_source", None)
 
-        return self.clazz(**o) if o else None
+        return self.clazz(**o)
 
     def get_created_at(self, id:str) -> datetime | None:
         try:

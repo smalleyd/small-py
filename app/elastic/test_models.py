@@ -1,14 +1,12 @@
 from enum import Enum
 from datetime import datetime
-from pydantic import BaseModel
-from .dao import Filter
+from .dao import Entity, Filter
 
 class Role(Enum):
   ADMIN = "admin"
   USER = "user"
 
-class Person(BaseModel):
-  id: str | None = None
+class Person(Entity):
   name: str | None = None
   email: str | None = None
   role: Role | None = None

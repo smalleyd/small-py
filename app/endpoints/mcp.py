@@ -1,5 +1,3 @@
-from uuid import uuid4
-from typing import Any
 from fastapi import APIRouter, Body, Depends, Query
 from ..dao.startup import mcp_dao
 from ..elastic.dao import Results
@@ -34,7 +32,6 @@ async def has_slug(slug: str) -> Result[bool]:
 
 @router.post("/", status_code=201)
 async def add(value: Mcp) -> Mcp:
-    if not value.id: value.id = uuid4().hex
     return dao.upsert(value)
 
 @router.put("/")

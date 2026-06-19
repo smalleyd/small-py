@@ -234,7 +234,9 @@ class BaseDAOTest(unittest.TestCase):
         self.assertEqual(1, len(values), "Check size")
 
         value = values[0]
-        self.assertIsNone(value.id, "Check id")
+        self.assertIsNotNone(value.id, "Check id")  # Populated with a default UUID.
+        self.assertNotEqual("test-person-1", value.id, "Check id")
+        self.assertEqual(32, len(value.id), "Check id")
         self.assertEqual("First Person", value.name, "Check name")
         self.assertIsNone(value.email, "Check email")
 
@@ -382,6 +384,22 @@ class BaseDAOTest(unittest.TestCase):
         self.assertEqual(self.value.created_at, value.created_at, "Check created_at")
         self.assertLess(value.created_at, value.updated_at, "Check updated_at")
         self.assertLess(self.value.updated_at, value.updated_at, "Check updated_at")
+
+    def test_60_create_without_id(self):
+        value = BaseDAOTest.value = self.dao.upsert(Person(name="Without ID", email="withoutid@test.com", role=Role.ADMIN, tags={"monday", "tuesday", "wednesday"}))
+
+        self.assertIsNotNone(value, "Exists")
+        self.assertNotEqual("test-person-1", value.id, "Check id")
+        self.assertEqual(32, len(value.id), "Check id")
+        self.assertEqual("Without ID", value.name, "Check name")
+        self.assertEqual("withoutid@test.com", value.email, "Check email")
+        self.assertEqual(Role.ADMIN, value.role, "Check role")
+        self.assertEqual({"monday", "tuesday", "wednesday"}, value.tags, "Check tags")
+        self.assertIsNotNone(value.created_at, "Check created_at")
+        self.assertEqual(value.created_at, value.updated_at, "Check updated_at")
+        self.assertFalse(self.dao.before_save_exists, "Check dao_before_save_exists")
+
+        self.dao.remove(value.id)
 
     def test_99_remove(self):
         self.dao.remove("test-person-1")
