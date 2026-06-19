@@ -25,6 +25,7 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
                 }},
                 "authentication": {"properties":{
                     "type": {"type": "keyword"},
+                    "header": {"type": "keyword", "normalizer": "lowercase"},
                     "url": {"type": "keyword", "normalizer": "lowercase"}
                 }},
                 "created_at": {"type": "date"},

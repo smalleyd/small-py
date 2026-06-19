@@ -43,6 +43,7 @@ VALUE = {
   "tools": [ TOOL ],
   "authentication": {
       "type": "ApiKey",
+      "header": "X-Techmo-Key",
       "url": "https://something.io/login"
   }
 }

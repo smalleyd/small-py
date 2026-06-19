@@ -23,6 +23,7 @@ class Authentication(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     type: AuthType
+    header: Annotated[str | None, Field(min_length=1, max_length=100)] = None
     url: Annotated[str, Field(pattern="^(http|https)://[\\w\\.\\-/!:#?=&%,@]+$")]
 
 class Tool(BaseModel):
