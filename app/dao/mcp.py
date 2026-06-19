@@ -12,7 +12,6 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
                 "name": {"type": "text", "fields": {"keyword": {"type": "keyword", "normalizer":"lowercase"}}},
                 "slug": {"type": "keyword", "normalizer":"lowercase"},
                 "description": {"type": "text"},
-                "api_key": {"type": "keyword"},
                 "tools": {"properties":{
                     "method": {"type": "keyword"},
                     "name": {"type": "text"},

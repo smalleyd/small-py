@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import Annotated
 from datetime import datetime
 from ..elastic.dao import Filter
+from typing import Annotated, Any
 from pydantic import BaseModel, ConfigDict, Field
 
 class AuthType(Enum):
@@ -32,7 +32,7 @@ class Tool(BaseModel):
     url: Annotated[str, Field(pattern="^(http|https)://[\\w\\.\\-/!:#?=&%,@]+$")]
     headers: Annotated[dict[str, str], Field(min_length=1, max_length=20)]
     body_template: Annotated[str | None, Field(min_length=1, max_length=50000)] = None
-    input_schema: Annotated[dict[str, str], Field(min_length=1, max_length=100)]
+    input_schema: Annotated[dict[str, Any], Field(min_length=1, max_length=100)]
     response_transform: Annotated[str, Field(min_length=1, max_length=10000)]
     timeout_ms: Annotated[int, Field(ge=0, le=20000)]
 
@@ -43,7 +43,6 @@ class Mcp(BaseModel):
     name: Annotated[str, Field(min_length=1, max_length=500)]
     slug: Annotated[str, Field(min_length=1, max_length=60, pattern="^[\\w\\-]+$")]
     description: Annotated[str | None, Field(min_length=1, max_length=5000)] = None
-    api_key: Annotated[str, Field(min_length=1, max_length=100)]
     tools: list[Tool]
     authentication: Authentication | None = None
     created_at: datetime | None = None

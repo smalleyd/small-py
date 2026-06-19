@@ -26,7 +26,10 @@ TOOL = {
     "body_template": "body template 1",
     "input_schema": {
         "key-1": "value 1",
-        "key-2": "value 2"
+        "key-2": {"sub-2": "second", "sub-2.1": "Tuesday"},
+        "key-3": 3,
+        "key-4": 4.4,
+        "key-5": [{"sub-5": "fifth", "sub-5.1": "Friday"}]
     },
     "response_transform": "response 1",
     "timeout_ms": 5000
@@ -37,7 +40,6 @@ VALUE = {
   "name": "Test 1",
   "slug": "test-1",
   "description": "Test One",
-  "api_key": "test_1",
   "tools": [ TOOL ],
   "authentication": {
       "type": "ApiKey",
@@ -87,10 +89,14 @@ class TestMcpEndpoints(unittest.TestCase):
         self.assertEqual("mcp-1", value.id, "Check ID")
         self.assertEqual("Test 1", value.name, "Check name")
         self.assertEqual(1, len(value.tools), "Check tools")
-        self.assertEqual("First", value.tools[0].name, "Check tools[0].name")
         self.assertIsNone(value.archived_at, "Check archived_at")
         self.assertIsNotNone(value.created_at, "Check created_at")
         self.assertEqual(value.created_at, value.updated_at, "Check updated_at")
+
+        tool = value.tools[0]
+        self.assertEqual("First", tool.name, "Check tools[0].name")
+        self.assertIsNotNone(tool.input_schema, "Check tools[0].input_schema")
+        self.assertEqual(TOOL["input_schema"], tool.input_schema, "Check tools[0].input_schema")
 
     @parameterized.expand([
         ("slug-1", False),
