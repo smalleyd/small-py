@@ -241,7 +241,7 @@ class TestMcpEndpoints(unittest.TestCase):
             self.assertEqual("mcp-1", value.data[0]["id"], "Check ID")
 
     def test_050_archive(self):
-        response = client.delete("/mcp/mcp-1")
+        response = client.delete("/mcp/mcp-1/archive")
         self.assertEqual(204, response.status_code, "Check status_code")
 
     def test_050_archive_get(self):
@@ -322,6 +322,14 @@ class TestMcpEndpoints(unittest.TestCase):
         self.assertIsNotNone(value, "Exists")
         self.assertEqual(1, len(value.tools), "Check tools")
         self.assertEqual("Tool 1", value.tools[0].name, "Check tools[0].name")
+
+    def test_999_delete(self):
+        response = client.delete("/mcp/mcp-1")
+        self.assertEqual(204, response.status_code, "Check status_code")
+
+    def test_999_delete_get(self):
+        response = client.get("/mcp/mcp-1")
+        self.assertEqual(404, response.status_code, "Check status_code")
 
 if __name__ == '__main__':
     unittest.main()
