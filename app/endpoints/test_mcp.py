@@ -211,6 +211,8 @@ class TestMcpEndpoints(unittest.TestCase):
         ({"authentication_type": "ApiKey"}, 1),
         ({"authentication_type": "Bearer"}, 0),
         ({"authentication_type": "Basic"}, 0),
+        ({"authentication_header": "x-techmo-key"}, 1),
+        ({"authentication_header": "X-Techmo-Keys"}, 0),
         ({"authentication_url": "https://something.io/login"}, 1),
         ({"authentication_url": "https://something.io/Login"}, 1),
         ({"authentication_url": "https://something.io/auth"}, 0),

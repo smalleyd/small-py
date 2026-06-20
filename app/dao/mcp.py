@@ -73,6 +73,8 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
             must.append({"match": {"tools.description": { "query": f.tools_description, "fuzziness": "AUTO" }}})
         if f.authentication_type:
             must.append({"term": {"authentication.type": f.authentication_type.value}})
+        if f.authentication_header:
+            must.append({"term": {"authentication.header": f.authentication_header}})
         if f.authentication_url:
             must.append({"term": {"authentication.url": f.authentication_url}})
         if f.has_authentication is not None:

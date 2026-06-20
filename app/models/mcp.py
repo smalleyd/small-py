@@ -61,6 +61,7 @@ class McpSearchRequest(Filter):
     tools_name: str | None = None
     tools_description: str | None = None
     authentication_type: AuthType | None = None
+    authentication_header: str | None = None
     authentication_url: str | None = None
     has_authentication: bool | None = None
     created_at_from: datetime | None = None
