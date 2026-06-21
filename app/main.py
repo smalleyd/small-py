@@ -27,6 +27,6 @@ async def handle_not_found_error(request: Request, exc: NotFoundError) -> JSONRe
 async def handle_validation_error(request: Request, exc: ValidationError) -> JSONResponse:
   return JSONResponse(status_code=422, content={"detail": exc.errors(), "title": exc.title})
 
-@app.get("/", response_model_exclude_unset=True, tags=["Main"])
+@app.get("/", tags=["Main"])
 async def root() -> dict[str, Any]:
   return {"message": "Hello World"}
