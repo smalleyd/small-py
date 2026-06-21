@@ -4,23 +4,25 @@ from ..elastic.dao import BaseDAO
 from elasticsearch import Elasticsearch
 from ..models.person import Person, PersonSearchRequest
 
+mappings = {"properties":{
+    "id": {"type": "keyword"},
+    "email": {"type": "keyword", "normalizer": "lowercase"},
+    "first_name": {"type": "text", "fields": {"keyword": {"type": "keyword", "normalizer": "lowercase"}}},
+    "last_name": {"type": "text", "fields": {"keyword": {"type": "keyword", "normalizer": "lowercase"}}},
+    "name": {"type": "text", "fields": {"keyword": {"type": "keyword", "normalizer": "lowercase"}}},
+    "type": {"type": "keyword"},
+    "created_at": {"type": "date"},
+    "updated_at": {"type": "date"},
+    "archived_at": {"type": "date"},
+    "auth_at": {"type": "date"}
+}}
+
 class PersonDAO(BaseDAO[Person, PersonSearchRequest]):
     def __init__(self, es: Elasticsearch):
         super().__init__(es,
             index="person_",
             clazz = Person,
-            mappings={"properties":{
-                "id": {"type": "keyword"},
-                "email": {"type": "keyword", "normalizer": "lowercase"},
-                "first_name": {"type": "text", "fields": {"keyword": {"type": "keyword", "normalizer": "lowercase"}}},
-                "last_name": {"type": "text", "fields": {"keyword": {"type": "keyword", "normalizer": "lowercase"}}},
-                "name": {"type": "text", "fields": {"keyword": {"type": "keyword", "normalizer": "lowercase"}}},
-                "type": {"type": "keyword"},
-                "created_at": {"type": "date"},
-                "updated_at": {"type": "date"},
-                "archived_at": {"type": "date"},
-                "auth_at": {"type": "date"}
-            }})
+            mappings=mappings)
 
         self.filter_has_archived_at = {"exists": {"field": "archived_at"}}
         self.filter_has_auth_at = {"exists": {"field": "auth_at"}}

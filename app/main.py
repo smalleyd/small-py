@@ -1,15 +1,17 @@
 from typing import Any
-from .endpoints import person, mcp
+from urllib.error import HTTPError
 from fastapi import FastAPI, Request
+from pydantic import ValidationError
 from elasticsearch import NotFoundError
 from fastapi.responses import JSONResponse
-from pydantic import ValidationError
-from urllib.error import HTTPError
+from .endpoints import person, mcp, session
 
 app = FastAPI(title="My Context", version="0.0.1")
 
 app.include_router(person.router)
 app.include_router(mcp.router)
+
+app.include_router(session.router)
 
 @app.exception_handler(HTTPError)
 async def handle_http_error(request: Request, exc: HTTPError) -> JSONResponse:

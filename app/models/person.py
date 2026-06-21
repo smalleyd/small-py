@@ -9,7 +9,7 @@ class Type(Enum):
     ADMIN = "admin"
 
 class Person(Entity):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     email: Annotated[str, Field(pattern="^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")]
     first_name: Annotated[str, Field(min_length=1, max_length=50)]
@@ -22,7 +22,7 @@ class Person(Entity):
     auth_at: datetime | None = None
 
 class PersonSearchRequest(Filter):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     ids: list[str] | None = None
     email: str | None = None
