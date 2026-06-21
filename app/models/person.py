@@ -4,6 +4,11 @@ from datetime import datetime
 from pydantic import ConfigDict, Field
 from ..elastic.dao import Entity, Filter
 
+class Source(Enum):
+    EMAIL = "Email"
+    GITHUB = "GitHub"
+    GOOGLE = "Google"
+
 class Type(Enum):
     USER = "user"
     ADMIN = "admin"
@@ -16,6 +21,7 @@ class Person(Entity):
     last_name: Annotated[str, Field(min_length=1, max_length=50)]
     name: Annotated[str, Field(min_length=1, max_length=105)]
     type: Type = Type.USER
+    source: Source = Source.EMAIL
     created_at: datetime | None = None
     updated_at: datetime | None = None
     archived_at: datetime | None = None
@@ -30,6 +36,7 @@ class PersonSearchRequest(Filter):
     last_name: str | None = None
     name: str | None = None
     type: Type | None = None
+    source: Source | None = None
     created_at_from: datetime | None = None
     created_at_to: datetime | None = None
     updated_at_from: datetime | None = None
