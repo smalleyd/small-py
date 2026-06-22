@@ -22,7 +22,7 @@ class Token(BaseModel):
     expires_at: datetime = field(default_factory=lambda: datetime.now() + expiration)
     failures: int = 0
 
-class OtpDao():
+class OtpDAO():
     def __init__(self, connection_pool: ConnectionPool, db: int = 0):
         self.db = db
         self.connection_pool = connection_pool

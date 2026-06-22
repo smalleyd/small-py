@@ -1,9 +1,9 @@
 import unittest
-from .otp import OtpDao
+from .otp import OtpDAO
 from ..myredis.tester import pool
 from datetime import datetime, timedelta
 
-dao = OtpDao(pool, 1)
+dao = OtpDAO(pool, 1)
 now = datetime.now()
 ago = now + timedelta(minutes=9)
 ahead = now + timedelta(minutes=12)
