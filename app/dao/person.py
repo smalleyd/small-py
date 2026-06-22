@@ -36,6 +36,9 @@ class PersonDAO(BaseDAO[Person, PersonSearchRequest]):
         now = datetime.now()
         super().set(id, "auth_at", now, now)
 
+    def get_by_email(self, value: str) -> Person | None:
+        return self.get_by_query_({"term": {"email": value}})
+
     def before_save(self, id: str, value: dict[str, Any], exists: bool) -> dict[str, Any]:
         if "archived_at" in value: del value["archived_at"] # Should only be set by the 'archive' method. DLS on 6/16/2026.
         if "auth_at" in value: del value["auth_at"] # Should only be set by the 'auth' method. DLS on 6/16/2026.

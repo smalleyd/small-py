@@ -85,6 +85,14 @@ class PersonEndpointsTest(unittest.TestCase):
         self.assertIsNotNone(value.created_at, "Check created_at")
         self.assertEqual(value.created_at, value.updated_at, "Check updated_at")
 
+    def test_010_post_get_by_email_fail(self):
+        self.assertIsNone(person_dao.get_by_email("first@test.co"))
+
+    def test_010_post_get_by_email_success(self):
+        value = person_dao.get_by_email("FIRST@test.com")
+        self.assertIsNotNone(value, "Exists")
+        self.assertEqual("person-1", value.id, "Check ID")
+
     def test_010_post_put(self):
         value = VALUE.copy()
         value["first_name"] = "First One"
