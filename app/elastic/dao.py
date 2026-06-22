@@ -198,6 +198,15 @@ class BaseDAO(Generic[E, F]):
 
         return self.clazz(**hits[0]["_source"])
 
+    def get_by_query_(self, query: dict[str, Any]) -> E | None:
+        resp = self.es.search(index=self.index, query=query, size=1, from_=0)
+        hits = resp["hits"]["hits"]
+
+        if not hits:
+            return None
+
+        return self.clazz(**hits[0]["_source"])
+
     def ids(self, query: dict[str, Any], size: int) -> list[str]:
         resp = self.es.search(index=self.index, query=query, size=size, from_=0, source=False)
         hits = resp["hits"]["hits"]

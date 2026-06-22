@@ -162,6 +162,14 @@ class BaseDAOTest(unittest.TestCase):
         self.assertIsNotNone(value, "Exists")
         self.assertEqual("test-person-1", value.id, "Check ID")
 
+    def test_00_get_by_query__fail(self):
+        self.assertIsNone(self.dao.get_by_query_({"term": {"email": "first@test.co"}}))
+
+    def test_00_get_by_query__success(self):
+        value = self.dao.get_by_query_({"term": {"email": "FIRST@test.com"}})
+        self.assertIsNotNone(value, "Exists")
+        self.assertEqual("test-person-1", value.id, "Check ID")
+
     @parameterized.expand([
         ("test-person-1", None),
         ("test-person-2", None)
