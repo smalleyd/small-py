@@ -4,13 +4,13 @@ from fastapi import FastAPI, Request
 from pydantic import ValidationError
 from elasticsearch import NotFoundError
 from fastapi.responses import JSONResponse
-from .endpoints import person, mcp, session
+from .endpoints import authentication, mcp, person, session
 
 app = FastAPI(title="My Context", version="0.0.1")
 
+app.include_router(authentication.router)
 app.include_router(person.router)
 app.include_router(mcp.router)
-
 app.include_router(session.router)
 
 @app.exception_handler(HTTPError)

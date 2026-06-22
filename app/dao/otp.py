@@ -37,6 +37,10 @@ class OtpDAO():
 
         return o
 
+    def get(self, email: str) -> Token | None:
+        o = self.dbx().hget(KEY, email)
+        return Token.model_validate_json(json_data=o) if o else None
+
     def ttl(self, email: str) -> int:
         return self.dbx().httl(KEY, email)[0]
 

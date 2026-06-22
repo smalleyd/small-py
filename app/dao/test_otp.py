@@ -26,6 +26,14 @@ class OtpDaoTest(unittest.TestCase):
 
         OtpDaoTest.token = token
 
+    def test_010_get_invalid(self):
+        self.assertIsNone(dao.get("second@test.com"))
+
+    def test_010_get_valid(self):
+        value = dao.get("first@test.com")
+        self.assertIsNotNone(value, "Exists")
+        self.assertEqual(self.token, value, "Check")
+
     def test_010_ttl_invalid(self):
         self.assertEqual(-2, dao.ttl("second@test.com"))
 

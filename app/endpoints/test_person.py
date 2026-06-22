@@ -2,6 +2,7 @@ import unittest
 from typing import Any
 from ..main import app
 from ..elastic.dao import Results
+from urllib.error import HTTPError
 from ..dao.startup import person_dao
 from parameterized import parameterized
 from datetime import datetime, timedelta
@@ -86,10 +87,18 @@ class PersonEndpointsTest(unittest.TestCase):
         self.assertEqual(value.created_at, value.updated_at, "Check updated_at")
 
     def test_010_post_get_by_email_fail(self):
-        self.assertIsNone(person_dao.get_by_email("first@test.co"))
+        self.assertRaises(HTTPError, lambda: person_dao.get_by_email("first@test.co"))
 
     def test_010_post_get_by_email_success(self):
         value = person_dao.get_by_email("FIRST@test.com")
+        self.assertIsNotNone(value, "Exists")
+        self.assertEqual("person-1", value.id, "Check ID")
+
+    def test_010_post_get_by_email__fail(self):
+        self.assertIsNone(person_dao.get_by_email_("first@test.co"))
+
+    def test_010_post_get_by_email__success(self):
+        value = person_dao.get_by_email_("FIRST@test.com")
         self.assertIsNotNone(value, "Exists")
         self.assertEqual("person-1", value.id, "Check ID")
 
