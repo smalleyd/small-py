@@ -19,7 +19,7 @@ class OtpCompleteRequest(BaseModel):
 class OtpStartResponse(BaseModel):
     exists: bool
 
-@router.get("/otp")
+@router.get("/otp", summary="Start OTP")
 async def start_otp(email: Annotated[str, Query(pattern="^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")]) -> OtpStartResponse:
     token = otp_dao.generate(email)
     person = person_dao.get_by_email_(email)
@@ -28,7 +28,7 @@ async def start_otp(email: Annotated[str, Query(pattern="^[A-Za-z0-9+_.-]+@[A-Za
 
     return OtpStartResponse(exists=person is not None)
 
-@router.post("/otp")
+@router.post("/otp", summary="Complete OTP")
 async def complete_otp(request: OtpCompleteRequest) -> Session:
     if not otp_dao.check(request.email, request.token):
         raise ValidationError.from_exception_data(title="Invalid request", line_errors=[])
@@ -36,7 +36,7 @@ async def complete_otp(request: OtpCompleteRequest) -> Session:
     person = person_dao.auth(request.email)
     return session_dao.upsert(Session(person=person, duration=30, expires_at=expire_when()))
 
-@router.post("/register")
+@router.post("/register", summary="Register")
 async def register(
     token: Annotated[str, Query(min_length=1, max_length=100)],
     value: Person
