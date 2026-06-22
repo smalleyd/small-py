@@ -9,6 +9,9 @@ from ..dao.startup import otp_dao, person_dao, session_dao
 router = APIRouter(prefix="/auth", tags=["authentication"])
 expiration = timedelta(minutes=30)
 
+def expire_when() -> datetime:
+    return datetime.now() + expiration
+
 class OtpCompleteRequest(BaseModel):
     email: Annotated[str, Field(min_length=1, max_length=200)]
     token: Annotated[str, Field(min_length=1, max_length=100)]
@@ -30,9 +33,8 @@ async def complete_otp(request: OtpCompleteRequest) -> Session:
     if not otp_dao.check(request.email, request.token):
         raise ValidationError.from_exception_data(title="Invalid request", line_errors=[])
 
-    person = person_dao.get_by_email(request.email)
-    person.auth_at = datetime.now()
-    return session_dao.upsert(Session(person=person, duration=30, expires_at=datetime.now() + expiration))
+    person = person_dao.auth(request.email)
+    return session_dao.upsert(Session(person=person, duration=30, expires_at=expire_when()))
 
 @router.post("/register")
 async def register(
@@ -45,4 +47,4 @@ async def register(
     value.source = Source.EMAIL
     value.auth_at = datetime.now()
     person = person_dao.upsert(value)
-    return session_dao.upsert(Session(person=person, duration=30, expires_at=datetime.now() + expiration))
+    return session_dao.upsert(Session(person=person, duration=30, expires_at=expire_when()))

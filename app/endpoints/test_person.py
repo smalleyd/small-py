@@ -4,6 +4,7 @@ from ..main import app
 from ..elastic.dao import Results
 from urllib.error import HTTPError
 from ..dao.startup import person_dao
+from pydantic import ValidationError
 from parameterized import parameterized
 from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
@@ -198,6 +199,16 @@ class PersonEndpointsTest(unittest.TestCase):
         self.assertIsNone(results.scroll_id, "Check scroll_id")
         self.assertEqual(expected, len(results.scores), "Check scores")
 
+    def test_035_auth(self):
+        person_dao.auth("FIRST@test.com")
+
+    def test_035_auth_get(self):
+        value = Person(**client.get("/people/person-1").json())
+        self.assertIsNone(value.archived_at, "Check archived_at")
+        self.assertIsNotNone(value.auth_at, "Check auth_at")
+        self.assertLess(value.created_at, value.updated_at, "Check created_at")
+        self.assertEqual(value.auth_at, value.updated_at, "Check updated_at")
+
     def test_040_archive(self):
         response = client.delete("/people/person-1/archive")
         self.assertEqual(204, response.status_code, "Check status_code")
@@ -205,20 +216,13 @@ class PersonEndpointsTest(unittest.TestCase):
     def test_040_archive_get(self):
         value = Person(**client.get("/people/person-1").json())
         self.assertIsNotNone(value.archived_at, "Check archived_at")
-        self.assertIsNone(value.auth_at, "Check auth_at")
-        self.assertLess(value.created_at, value.updated_at, "Check created_at")
-        self.assertEqual(value.archived_at, value.updated_at, "Check updated_at")
-
-    def test_050_auth(self):
-        person_dao.auth("person-1")
-
-    def test_050_auth_get(self):
-        value = Person(**client.get("/people/person-1").json())
-        self.assertIsNotNone(value.archived_at, "Check archived_at")
         self.assertIsNotNone(value.auth_at, "Check auth_at")
         self.assertLess(value.created_at, value.updated_at, "Check created_at")
-        self.assertLess(value.archived_at, value.updated_at, "Check updated_at")
-        self.assertEqual(value.auth_at, value.updated_at, "Check updated_at")
+        self.assertEqual(value.archived_at, value.updated_at, "Check updated_at")
+        self.assertLess(value.auth_at, value.updated_at, "Check updated_at")
+
+    def test_050_auth(self):
+        self.assertRaises(ValidationError, lambda: person_dao.auth("first@test.com"))
 
     @parameterized.expand([
         ({"archived_at_from": minutesAgo}, 1),

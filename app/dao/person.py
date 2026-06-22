@@ -1,6 +1,7 @@
 from typing import Any
 from datetime import datetime
 from ..elastic.dao import BaseDAO
+from pydantic import ValidationError
 from elasticsearch import Elasticsearch
 from ..models.person import Person, PersonSearchRequest
 
@@ -32,9 +33,15 @@ class PersonDAO(BaseDAO[Person, PersonSearchRequest]):
         now = datetime.now()
         super().set(id, "archived_at", now, now)
 
-    def auth(self, id: str):
-        now = datetime.now()
-        super().set(id, "auth_at", now, now)
+    def auth(self, email: str) -> Person:
+        o = self.get_by_email(email)
+        if o.archived_at:
+            raise ValidationError.from_exception_data(title=f"The user '{email}' is archived.", line_errors=[])
+
+        o.auth_at = now = datetime.now()
+        super().set(o.id, "auth_at", now, now)
+
+        return o
 
     def get_by_email(self, value: str) -> Person:
         return self.get_by_query({"term": {"email": value}})
