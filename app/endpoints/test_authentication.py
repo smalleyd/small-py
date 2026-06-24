@@ -1,5 +1,6 @@
 import unittest
 from ..main import app
+from ..datasource import mailer
 from ..endpoints import test_person
 from ..models.session import Session
 from datetime import datetime, timedelta
@@ -25,6 +26,9 @@ class AuthenticationEndpointsTest(unittest.TestCase):
     def setUpClass(cls):
         cls.person = person_dao.upsert(Person(**FIRST))
 
+    def setUp(self):
+        mailer.last_inputs = None
+
     @classmethod
     def tearDownClass(cls):
         person_dao.remove(cls.person.id)
@@ -37,6 +41,14 @@ class AuthenticationEndpointsTest(unittest.TestCase):
         self.assertIsNotNone(results, "Exists")
         self.assertTrue(results.exists, "Check exists")
 
+        self.assertIsNotNone(mailer.last_inputs, "Check last_input")
+        self.assertIn("email", mailer.last_inputs, "Check last_inputs.email")
+        self.assertIn("token", mailer.last_inputs, "Check last_inputs.token")
+        self.assertIn("person", mailer.last_inputs, "Check last_inputs.person")
+        self.assertEqual("first@test.com", mailer.last_inputs.get("email"), "Check last_inputs.email")
+        self.assertIsNotNone(mailer.last_inputs.get("token"), "Check last_inputs.token")
+        self.assertIsNotNone(mailer.last_inputs.get("person"), "Check last_inputs.person")
+
     def test_000_start_otp_new_person(self):
         response = client.get("/auth/otp", params={"email": "second@test.com"})
         self.assertEqual(response.status_code, 200, "Check status_code")
@@ -45,21 +57,40 @@ class AuthenticationEndpointsTest(unittest.TestCase):
         self.assertIsNotNone(results, "Exists")
         self.assertFalse(results.exists, "Check exists")
 
+        self.assertIsNotNone(mailer.last_inputs, "Check last_input")
+        self.assertIn("email", mailer.last_inputs, "Check last_inputs.email")
+        self.assertIn("token", mailer.last_inputs, "Check last_inputs.token")
+        self.assertIn("person", mailer.last_inputs, "Check last_inputs.person")
+        self.assertEqual("second@test.com", mailer.last_inputs.get("email"), "Check last_inputs.email")
+        self.assertIsNotNone(mailer.last_inputs.get("token"), "Check last_inputs.token")
+        self.assertIsNone(mailer.last_inputs.get("person"), "Check last_inputs.person")
+
     def test_010_complete_otp_invalid_token(self):
         response = client.post("/auth/otp", json={"email": "second@test.com", "token": "invalid"})
         self.assertEqual(422, response.status_code, "Check status_code")
+        self.assertIsNone(mailer.last_inputs, "Check last_input")
 
     def test_010_complete_otp_new_person(self):
         response = client.post("/auth/otp", json={"email": "second@test.com", "token": otp_dao.get("second@test.com").value})
         self.assertEqual(404, response.status_code, "Check status_code")
+        self.assertIsNone(mailer.last_inputs, "Check last_input")
 
     def test_020_start_otp_new_person(self):
         response = client.get("/auth/otp", params={"email": "second@test.com"})
         self.assertEqual(response.status_code, 200, "Check status_code")
 
+        self.assertIsNotNone(mailer.last_inputs, "Check last_input")
+        self.assertIn("email", mailer.last_inputs, "Check last_inputs.email")
+        self.assertIn("token", mailer.last_inputs, "Check last_inputs.token")
+        self.assertIn("person", mailer.last_inputs, "Check last_inputs.person")
+        self.assertEqual("second@test.com", mailer.last_inputs.get("email"), "Check last_inputs.email")
+        self.assertIsNotNone(mailer.last_inputs.get("token"), "Check last_inputs.token")
+        self.assertIsNone(mailer.last_inputs.get("person"), "Check last_inputs.person")
+
     def test_030_complete_otp(self):
         response = client.post("/auth/otp", json={"email": "first@test.com", "token": otp_dao.get("first@test.com").value})
         self.assertEqual(response.status_code, 200, "Check status_code")
+        self.assertIsNone(mailer.last_inputs, "Check last_input")
 
         now = datetime.now()
         value = Session(**response.json())
@@ -82,11 +113,12 @@ class AuthenticationEndpointsTest(unittest.TestCase):
     def test_030_register_fail(self):
         response = client.post("/auth/register", json=SECOND, params={"token": "invalid"})
         self.assertEqual(response.status_code, 422, "Check status_code")
-
+        self.assertIsNone(mailer.last_inputs, "Check last_input")
 
     def test_030_register_success(self):
         response = client.post("/auth/register", json=SECOND, params={"token": otp_dao.get("second@test.com").value})
         self.assertEqual(response.status_code, 200, "Check status_code")
+        self.assertIsNone(mailer.last_inputs, "Check last_input")
 
         now = datetime.now()
         value = Session(**response.json())

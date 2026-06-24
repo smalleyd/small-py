@@ -1,5 +1,5 @@
-from .mailer import Mailer
 from typing import Annotated
+from ..datasource import mailer
 from ..models.session import Session
 from fastapi import APIRouter, Query
 from datetime import datetime, timedelta
@@ -9,7 +9,6 @@ from ..dao.startup import otp_dao, person_dao, session_dao
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 expiration = timedelta(minutes=30)
-mailer = Mailer()
 
 def expire_when() -> datetime:
     return datetime.now() + expiration

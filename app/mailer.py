@@ -1,9 +1,10 @@
 import os
 import json
-from ..dao.otp import Token
+from .dao.otp import Token
+# from typing import override
 from mailgun.client import Client
+from .models.person import Person
 from urllib.error import HTTPError
-from ..models.person import Person
 
 BASE_URL = "https://shredly.io/"
 REPLY_TO = "Shredly<noreply@shredly.io>"
@@ -17,6 +18,8 @@ REGISTRATION_OTP = """
 """
 
 class Mailer:
+    last_inputs:dict | None = None # Needed for FakeMailer
+
     def __init__(self, key_name: str = "MAILGUN_API_KEY"):
         key = os.getenv(key_name)
         if not key:
@@ -49,3 +52,8 @@ class Mailer:
         if 400 <= response.status_code:
             print("MAILER:", response.text)
             raise HTTPError(code=response.status_code, msg=response.text, url="ES:exists", hdrs={}, fp=None)
+
+class FakeMailer(Mailer):
+    # @override
+    def send_otp_message(self, email: str, token: Token, person: Person | None = None):
+        self.last_inputs = {"email": email, "token": token, "person": person}
