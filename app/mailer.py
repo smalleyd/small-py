@@ -7,7 +7,7 @@ from .models.person import Person
 from urllib.error import HTTPError
 
 BASE_URL = "https://shredly.io/"
-REPLY_TO = "Shredly<noreply@shredly.io>"
+REPLY_TO = "Shredly<noreply@fora.day>"
 LOGIN_OTP = """
 <html><body><p>Hi {name}, here is your one-time-password (OTP) to continue with your login - <b>{token}</b>.</p>
 <p>Click this <a href=\"{url}\">link</a> if the OTP is not picked up automatically.</p></body></html>
