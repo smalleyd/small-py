@@ -1,13 +1,15 @@
+from .mailer import Mailer
 from typing import Annotated
 from ..models.session import Session
 from fastapi import APIRouter, Query
 from datetime import datetime, timedelta
-from ..models.person import Person, Source
+from ..models.person import Person, Source, Type
 from pydantic import BaseModel, Field, ValidationError
 from ..dao.startup import otp_dao, person_dao, session_dao
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 expiration = timedelta(minutes=30)
+mailer = Mailer()
 
 def expire_when() -> datetime:
     return datetime.now() + expiration
@@ -24,7 +26,7 @@ async def start_otp(email: Annotated[str, Query(pattern="^[A-Za-z0-9+_.-]+@[A-Za
     token = otp_dao.generate(email)
     person = person_dao.get_by_email_(email)
 
-    # send_otp_message(email, token, person)
+    mailer.send_otp_message(email, token, person)
 
     return OtpStartResponse(exists=person is not None)
 
@@ -44,6 +46,7 @@ async def register(
     if not otp_dao.check(value.email, token):
         raise ValidationError.from_exception_data(title="Invalid request", line_errors=[])
 
+    value.type = Type.USER  # Make sure that the Person is created as a User - not Admin. DLS on 6/24/2026.
     value.source = Source.EMAIL
     value.auth_at = datetime.now()
     person = person_dao.upsert(value)

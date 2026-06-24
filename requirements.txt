@@ -5,6 +5,7 @@ coverage==7.14.1
 elasticsearch==9.3.0
 fastapi[standard]==0.136.1
 idna==3.16
+mailgun==1.7.1
 parameterized==0.9.0
 pydantic==2.13.4
 pydantic_core==2.46.4

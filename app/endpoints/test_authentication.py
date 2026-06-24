@@ -1,16 +1,17 @@
 import unittest
-from typing import Any
 from ..main import app
+from ..endpoints import test_person
 from ..models.session import Session
-from parameterized import parameterized
 from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
-from ..endpoints.test_person import VALUE
 from ..models.person import Person, Source
+from .authentication import OtpStartResponse
 from ..dao.startup import otp_dao, person_dao, session_dao
-from .authentication import OtpCompleteRequest, OtpStartResponse
 
 client = TestClient(app)
+
+FIRST = test_person.VALUE.copy()
+FIRST["email"] = "first@test.com"
 
 SECOND = {
     "email": "second@test.com",
@@ -22,7 +23,7 @@ SECOND = {
 class AuthenticationEndpointsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.person = person_dao.upsert(Person(**VALUE))
+        cls.person = person_dao.upsert(Person(**FIRST))
 
     @classmethod
     def tearDownClass(cls):
