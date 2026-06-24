@@ -7,7 +7,7 @@ from ..models.person import Person, Source, Type
 from pydantic import BaseModel, Field, ValidationError
 from ..dao.startup import otp_dao, person_dao, session_dao
 
-router = APIRouter(prefix="/auth", tags=["authentication"])
+router = APIRouter(prefix="/auth", tags=["Authentication"])
 expiration = timedelta(minutes=30)
 
 def expire_when() -> datetime:
