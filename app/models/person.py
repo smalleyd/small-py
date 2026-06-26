@@ -1,4 +1,5 @@
 from enum import Enum
+from . import patterns
 from typing import Annotated
 from datetime import datetime
 from pydantic import ConfigDict, Field
@@ -16,7 +17,7 @@ class Type(Enum):
 class Person(Entity):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
-    email: Annotated[str, Field(pattern="^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")]
+    email: Annotated[str, Field(pattern=patterns.EMAIL)]
     first_name: Annotated[str, Field(min_length=1, max_length=50)]
     last_name: Annotated[str, Field(min_length=1, max_length=50)]
     name: Annotated[str, Field(min_length=1, max_length=105)]

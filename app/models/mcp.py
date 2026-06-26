@@ -1,4 +1,5 @@
 from enum import Enum
+from . import patterns
 from datetime import datetime
 from typing import Annotated, Any
 from ..elastic.dao import Entity, Filter
@@ -24,7 +25,7 @@ class Authentication(BaseModel):
 
     type: AuthType
     header: Annotated[str | None, Field(min_length=1, max_length=100)] = None
-    url: Annotated[str, Field(pattern="^(http|https)://[\\w\\.\\-/!:#?=&%,@]+$")]
+    url: Annotated[str, Field(pattern=patterns.URL)]
 
 class Tool(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
@@ -32,7 +33,7 @@ class Tool(BaseModel):
     method: Method
     name: Annotated[str, Field(min_length=1, max_length=200)]
     description: Annotated[str, Field(min_length=1, max_length=10000)]
-    url: Annotated[str, Field(pattern="^(http|https)://[\\w\\.\\-/!:#?=&%,@]+$")]
+    url: Annotated[str, Field(pattern=patterns.URL)]
     headers: Annotated[dict[str, str], Field(min_length=1, max_length=20)]
     body_template: Annotated[str | None, Field(min_length=1, max_length=50000)] = None
     input_schema: Annotated[dict[str, Any], Field(min_length=1, max_length=100)]
@@ -43,7 +44,7 @@ class Mcp(Entity):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     name: Annotated[str, Field(min_length=1, max_length=500)]
-    slug: Annotated[str, Field(min_length=1, max_length=60, pattern="^[\\w\\-]+$")]
+    slug: Annotated[str, Field(min_length=1, max_length=60, pattern=patterns.SLUG)]
     description: Annotated[str | None, Field(min_length=1, max_length=5000)] = None
     tools: list[Tool]
     authentication: Authentication | None = None
