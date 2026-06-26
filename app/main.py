@@ -1,3 +1,4 @@
+import requests
 from urllib.error import HTTPError
 from fastapi import FastAPI, Request
 from pydantic import ValidationError
@@ -32,6 +33,10 @@ async def handle_not_found_error(request: Request, exc: NotFoundError) -> JSONRe
   id = exc.body["_id"]
   index = exc.body["_index"]
   return JSONResponse(status_code=404, content={"message": f"Could not find {index} with identifier - {id}."})
+
+@app.exception_handler(requests.exceptions.HTTPError)
+async def handle_requests_http_error(request: Request, exc: requests.exceptions.HTTPError) -> JSONResponse:
+  return JSONResponse(status_code=exc.response.status_code, content={"message": exc.response.json()["error_description"]})
 
 @app.exception_handler(ValidationError) # Needed for BaseModel.model_validate calls in PATCH methods.
 async def handle_validation_error(request: Request, exc: ValidationError) -> JSONResponse:
