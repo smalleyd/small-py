@@ -1,5 +1,7 @@
 from typing import Annotated
 from ..datasource import mailer
+from urllib.error import HTTPError
+from ..google import get_oauth_user
 from ..models.session import Session
 from fastapi import APIRouter, Query
 from datetime import datetime, timedelta
@@ -13,12 +15,36 @@ expiration = timedelta(minutes=30)
 def expire_when() -> datetime:
     return datetime.now() + expiration
 
+class OAuthToken(BaseModel):
+    token: Annotated[str, Field(min_length=1, max_length=2000)]
+
 class OtpCompleteRequest(BaseModel):
     email: Annotated[str, Field(min_length=1, max_length=200)]
     token: Annotated[str, Field(min_length=1, max_length=100)]
 
 class OtpStartResponse(BaseModel):
     exists: bool
+
+@router.post("/google", summary="OAuth Google")
+async def google_oauth(value: OAuthToken) -> Session:
+    user = get_oauth_user(value.token)
+    person: Person
+    try:
+        person = person_dao.auth(user.email)
+    except ValidationError | HTTPError as e:
+        fn, ln = user.names
+        person = person_dao.upsert(Person(
+            email=user.email,
+            name=user.name,
+            first_name=fn,
+            last_name=ln,
+            type=Type.USER,
+            source=Source.GOOGLE,
+            archived_at=None,
+            auth_at=datetime.now()
+        ))
+
+    return session_dao.upsert(Session(person=person, duration=30, expires_at=expire_when()))
 
 @router.get("/otp", summary="Start OTP")
 async def start_otp(email: Annotated[str, Query(pattern="^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")]) -> OtpStartResponse:
