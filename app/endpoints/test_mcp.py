@@ -36,16 +36,26 @@ TOOL = {
 }
 
 VALUE = {
-  "id": "mcp-1",
-  "name": "Test 1",
-  "slug": "test-1",
-  "description": "Test One",
-  "tools": [ TOOL ],
-  "authentication": {
-      "type": "ApiKey",
-      "header": "X-Techmo-Key",
-      "url": "https://something.io/login"
-  }
+    "id": "mcp-1",
+    "name": "Test 1",
+    "slug": "test-1",
+    "description": "Test One",
+    "tools": [ TOOL ],
+    "authentication": {
+        "type": "ApiKey",
+        "header": "X-Techmo-Key",
+        "url": "https://something.io/login"
+    },
+    "oauth": {
+        "authorization_url": "https://authorization.url",
+        "token_url": "https://token.url",
+        "client_id": "client_id_1",
+        "client_secret": "client_secret_1",
+        "scopes": ["read", "write"],
+        "extra_params": {
+            "extra": "params"
+        }
+    }
 }
 
 class TestMcpEndpoints(unittest.TestCase):
@@ -218,6 +228,8 @@ class TestMcpEndpoints(unittest.TestCase):
         ({"authentication_url": "https://something.io/auth"}, 0),
         ({"has_authentication": True}, 1),
         ({"has_authentication": False}, 0),
+        ({"has_oauth": True}, 1),
+        ({"has_oauth": False}, 0),
         ({"created_at_from": minutesAhead}, 0),
         ({"created_at_from": minutesAgo}, 1),
         ({"created_at_to": minutesAhead}, 1),

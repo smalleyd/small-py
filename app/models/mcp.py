@@ -25,7 +25,17 @@ class Authentication(BaseModel):
 
     type: AuthType
     header: Annotated[str | None, Field(min_length=1, max_length=100)] = None
-    url: Annotated[str, Field(pattern=patterns.URL)]
+    url: Annotated[str, Field(max_length=1000, pattern=patterns.URL)]
+
+class OAuth(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    authorization_url: Annotated[str, Field(max_length=1000, pattern=patterns.URL)]
+    token_url: Annotated[str, Field(max_length=1000, pattern=patterns.URL)]
+    client_id: Annotated[str, Field(min_length=1, max_length=1000)]
+    client_secret: Annotated[str, Field(min_length=1, max_length=1000)]
+    scopes: Annotated[list[str] | None, Field(min_length=1, max_length=20)] = None
+    extra_params: Annotated[dict[str, str] | None, Field(min_length=1, max_length=100)] = None
 
 class Tool(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
@@ -33,7 +43,7 @@ class Tool(BaseModel):
     method: Method
     name: Annotated[str, Field(min_length=1, max_length=200)]
     description: Annotated[str, Field(min_length=1, max_length=10000)]
-    url: Annotated[str, Field(pattern=patterns.URL)]
+    url: Annotated[str, Field(max_length=1000, pattern=patterns.URL)]
     headers: Annotated[dict[str, str], Field(min_length=1, max_length=20)]
     body_template: Annotated[str | None, Field(min_length=1, max_length=50000)] = None
     input_schema: Annotated[dict[str, Any], Field(min_length=1, max_length=100)]
@@ -48,6 +58,7 @@ class Mcp(Entity):
     description: Annotated[str | None, Field(min_length=1, max_length=5000)] = None
     tools: list[Tool]
     authentication: Authentication | None = None
+    oauth: OAuth | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
     archived_at: datetime | None = None
@@ -65,6 +76,7 @@ class McpSearchRequest(Filter):
     authentication_header: str | None = None
     authentication_url: str | None = None
     has_authentication: bool | None = None
+    has_oauth: bool | None = None
     created_at_from: datetime | None = None
     created_at_to: datetime | None = None
     updated_at_from: datetime | None = None

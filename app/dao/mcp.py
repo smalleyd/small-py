@@ -28,12 +28,21 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
                     "header": {"type": "keyword", "normalizer": "lowercase"},
                     "url": {"type": "keyword", "normalizer": "lowercase"}
                 }},
+                "oauth": {"properties":{
+                    "authorization_url": {"type": "keyword", "normalizer": "lowercase"},
+                    "token_url": {"type": "keyword", "normalizer": "lowercase"},
+                    "client_id": {"type": "keyword", "normalizer": "lowercase"},
+                    "client_secret": {"type": "keyword", "normalizer": "lowercase"},
+                    "scopes": {"type": "keyword", "normalizer": "lowercase"},
+                    "extra_params": {"type": "flattened"}
+                }},
                 "created_at": {"type": "date"},
                 "updated_at": {"type": "date"},
                 "archived_at": {"type": "date"}
             }
         })
 
+        self.filter_has_oauth = {"exists": {"field": "oauth"}}
         self.filter_has_archived_at = {"exists": {"field": "archived_at"}}
         self.filter_has_authentication = {"exists": {"field": "authentication"}}
 
@@ -82,6 +91,8 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
                 must.append(self.filter_has_authentication)
             else:
                 must_not.append(self.filter_has_authentication)
+        if f.has_oauth is not None:
+            (must if f.has_oauth else must_not).append(self.filter_has_oauth)
         self.range_query(must, "created_at", f.created_at_from, f.created_at_to)
         self.range_query(must, "updated_at", f.updated_at_from, f.updated_at_to)
         self.range_query(must, "archived_at", f.archived_at_from, f.archived_at_to)
