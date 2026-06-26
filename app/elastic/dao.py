@@ -292,7 +292,8 @@ class BaseDAO(Generic[E, F]):
     def unique_key(self) -> str:
         return "name"
 
-    def to_dict(self, o) -> Any:
+    @staticmethod
+    def to_dict(o) -> Any:
         """
         NOT needed as long as E is a BaseModel.
 
