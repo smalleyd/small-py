@@ -31,7 +31,7 @@ async def google_oauth(value: OAuthToken) -> Session:
     person: Person
     try:
         person = person_dao.auth(user.email)
-    except ValidationError | HTTPError as e:
+    except ValidationError | HTTPError:
         fn, ln = user.names
         person = person_dao.upsert(Person(
             email=user.email,
