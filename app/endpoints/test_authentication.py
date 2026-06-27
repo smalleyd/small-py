@@ -6,16 +6,22 @@ from ..endpoints import test_person
 from ..models.session import Session
 from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
+from requests.exceptions import HTTPError
 from .authentication import OtpStartResponse
 from ..models.person import Person, Source, Type
 from ..dao.startup import otp_dao, person_dao, session_dao
+
+
+google_get_oauth_user_og = google.get_oauth_user
 
 def get_google_oauth_user(token: str) -> google.OAuthUser:
     match token:
         case "token-1":
             return google.OAuthUser(sub=token, email="google@test.com", name="Google Tester")
-        case _:
+        case "token-2":
             return google.OAuthUser(sub=token, email="second@test.com", name="Second Tester", given_name="Second", family_name="Tester")
+        case _:
+            return google_get_oauth_user_og(token)
 
 google.get_oauth_user = get_google_oauth_user
 
@@ -174,6 +180,11 @@ class AuthenticationEndpointsTest(unittest.TestCase):
 
         session_dao.remove(value.id)
         person_dao.remove(value.person.id)
+
+    def test_100_google_auth_fail(self):
+        response = client.post("/auth/google", json={"token": "invalid"})
+        self.assertEqual(401, response.status_code, "Check status_code")
+        self.assertEqual({"message": "Invalid Credentials"}, response.json(), "Check json")
 
     def test_100_google_auth_new(self):
         response = client.post("/auth/google", json={"token": "token-1"})
