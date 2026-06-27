@@ -1,13 +1,23 @@
 import unittest
+from .. import google
 from ..main import app
 from ..datasource import mailer
 from ..endpoints import test_person
 from ..models.session import Session
 from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
-from ..models.person import Person, Source
 from .authentication import OtpStartResponse
+from ..models.person import Person, Source, Type
 from ..dao.startup import otp_dao, person_dao, session_dao
+
+def get_google_oauth_user(token: str) -> google.OAuthUser:
+    match token:
+        case "token-1":
+            return google.OAuthUser(sub=token, email="google@test.com", name="Google Tester")
+        case _:
+            return google.OAuthUser(sub=token, email="second@test.com", name="Second Tester", given_name="Second", family_name="Tester")
+
+google.get_oauth_user = get_google_oauth_user
 
 client = TestClient(app)
 
@@ -89,7 +99,7 @@ class AuthenticationEndpointsTest(unittest.TestCase):
 
     def test_030_complete_otp(self):
         response = client.post("/auth/otp", json={"email": "first@test.com", "token": otp_dao.get("first@test.com").value})
-        self.assertEqual(response.status_code, 200, "Check status_code")
+        self.assertEqual(response.status_code, 201, "Check status_code")
         self.assertIsNone(mailer.last_inputs, "Check last_input")
 
         now = datetime.now()
@@ -117,7 +127,7 @@ class AuthenticationEndpointsTest(unittest.TestCase):
 
     def test_030_register_success(self):
         response = client.post("/auth/register", json=SECOND, params={"token": otp_dao.get("second@test.com").value})
-        self.assertEqual(response.status_code, 200, "Check status_code")
+        self.assertEqual(response.status_code, 201, "Check status_code")
         self.assertIsNone(mailer.last_inputs, "Check last_input")
 
         now = datetime.now()
@@ -126,7 +136,58 @@ class AuthenticationEndpointsTest(unittest.TestCase):
         self.assertIsNotNone(value.id, "Check id")
         self.assertIsNotNone(value.person, "Check person")
         self.assertEqual("second@test.com", value.person.email, "Check person.email")
+        self.assertEqual("Name 2", value.person.name, "Check person.name")
         self.assertEqual(Source.EMAIL, value.person.source, "Check person.source")
+        self.assertLess(now - timedelta(minutes=1), value.person.auth_at, "Check person.auth_at")
+        self.assertGreater(now + timedelta(minutes=1), value.person.auth_at, "Check person.auth_at")
+        self.assertEqual(30, value.duration, "Check duration")
+        self.assertIsNotNone(value.expires_at, "Check expires_at")
+        self.assertLess(now + timedelta(minutes=28), value.expires_at, "Check expires_at")
+        self.assertGreater(now + timedelta(minutes=32), value.expires_at, "Check expires_at")
+        self.assertIsNotNone(value.created_at, "Check created_at")
+        self.assertEqual(value.created_at, value.updated_at, "Check updated_at")
+
+        session_dao.remove(value.id)
+        # Do NOT remove the PERSON as needed for Google OAuth test.
+
+    def test_100_google_auth_existing(self):
+        response = client.post("/auth/google", json={"token": "token-2"})
+        self.assertEqual(response.status_code, 201, "Check status_code")
+
+        now = datetime.now()
+        value = Session(**response.json())
+        self.assertIsNotNone(value, "Exists")
+        self.assertIsNotNone(value.id, "Check id")
+        self.assertIsNotNone(value.person, "Check person")
+        self.assertEqual("second@test.com", value.person.email, "Check person.email")
+        self.assertEqual("Name 2", value.person.name, "Check person.name")
+        self.assertEqual(Type.USER, value.person.type, "Check person.type")
+        self.assertEqual(Source.EMAIL, value.person.source, "Check person.source")
+        self.assertLess(now - timedelta(minutes=1), value.person.auth_at, "Check person.auth_at")
+        self.assertGreater(now + timedelta(minutes=1), value.person.auth_at, "Check person.auth_at")
+        self.assertEqual(30, value.duration, "Check duration")
+        self.assertIsNotNone(value.expires_at, "Check expires_at")
+        self.assertLess(now + timedelta(minutes=28), value.expires_at, "Check expires_at")
+        self.assertGreater(now + timedelta(minutes=32), value.expires_at, "Check expires_at")
+        self.assertIsNotNone(value.created_at, "Check created_at")
+        self.assertEqual(value.created_at, value.updated_at, "Check updated_at")
+
+        session_dao.remove(value.id)
+        person_dao.remove(value.person.id)
+
+    def test_100_google_auth_new(self):
+        response = client.post("/auth/google", json={"token": "token-1"})
+        self.assertEqual(response.status_code, 201, "Check status_code")
+
+        now = datetime.now()
+        value = Session(**response.json())
+        self.assertIsNotNone(value, "Exists")
+        self.assertIsNotNone(value.id, "Check id")
+        self.assertIsNotNone(value.person, "Check person")
+        self.assertEqual("google@test.com", value.person.email, "Check person.email")
+        self.assertEqual("Google Tester", value.person.name, "Check person.name")
+        self.assertEqual(Type.USER, value.person.type, "Check person.type")
+        self.assertEqual(Source.GOOGLE, value.person.source, "Check person.source")
         self.assertLess(now - timedelta(minutes=1), value.person.auth_at, "Check person.auth_at")
         self.assertGreater(now + timedelta(minutes=1), value.person.auth_at, "Check person.auth_at")
         self.assertEqual(30, value.duration, "Check duration")

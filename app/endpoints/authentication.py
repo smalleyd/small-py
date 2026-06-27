@@ -1,7 +1,7 @@
+from .. import google
 from typing import Annotated
 from ..datasource import mailer
 from urllib.error import HTTPError
-from ..google import get_oauth_user
 from ..models.session import Session
 from fastapi import APIRouter, Query
 from datetime import datetime, timedelta
@@ -25,13 +25,13 @@ class OtpCompleteRequest(BaseModel):
 class OtpStartResponse(BaseModel):
     exists: bool
 
-@router.post("/google", summary="OAuth Google")
+@router.post("/google", summary="OAuth Google", status_code=201)
 async def google_oauth(value: OAuthToken) -> Session:
-    user = get_oauth_user(value.token)
+    user = google.get_oauth_user(value.token)   # MUST call get_oauth_user with google module prefix so that we can mock for tests. DLS on 6/27/2026.
     person: Person
     try:
         person = person_dao.auth(user.email)
-    except ValidationError | HTTPError:
+    except (HTTPError, ValidationError):
         fn, ln = user.names
         person = person_dao.upsert(Person(
             email=user.email,
@@ -40,7 +40,7 @@ async def google_oauth(value: OAuthToken) -> Session:
             last_name=ln,
             type=Type.USER,
             source=Source.GOOGLE,
-            archived_at=None,
+            archived_at=None,   # If archived, re-enable. DLS on 6/27/2026.
             auth_at=datetime.now()
         ))
 
@@ -55,7 +55,7 @@ async def start_otp(email: Annotated[str, Query(pattern="^[A-Za-z0-9+_.-]+@[A-Za
 
     return OtpStartResponse(exists=person is not None)
 
-@router.post("/otp", summary="Complete OTP")
+@router.post("/otp", summary="Complete OTP", status_code=201)
 async def complete_otp(request: OtpCompleteRequest) -> Session:
     if not otp_dao.check(request.email, request.token):
         raise ValidationError.from_exception_data(title="Invalid request", line_errors=[])
@@ -63,7 +63,7 @@ async def complete_otp(request: OtpCompleteRequest) -> Session:
     person = person_dao.auth(request.email)
     return session_dao.upsert(Session(person=person, duration=30, expires_at=expire_when()))
 
-@router.post("/register", summary="Register")
+@router.post("/register", summary="Register", status_code=201)
 async def register(
     token: Annotated[str, Query(min_length=1, max_length=100)],
     value: Person
