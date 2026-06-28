@@ -1,8 +1,9 @@
 import unittest
+from . import google    # MUST access get_oauth_user from the module because it is mocked in other tests. DLS on 6/28/2026.
 from typing import Any
+from .google import OAuthUser
 from parameterized import parameterized
 from requests.exceptions import HTTPError
-from .google import get_oauth_user, OAuthUser
 
 class OAuthUserTest(unittest.TestCase):
     @parameterized.expand([
@@ -35,7 +36,7 @@ class OAuthUserTest(unittest.TestCase):
 
     def test_get_oauth_user(self):
         try:
-            get_oauth_user("token-3")
+            google.get_oauth_user("token-1")
         except HTTPError as ex:
             self.assertIsNotNone(ex, "Exists")
             self.assertEqual(401, ex.response.status_code, "Check status_code")
