@@ -1,7 +1,10 @@
 from typing import Any
 from .person import mappings
 from ..elastic.dao import BaseDAO
+from urllib.error import HTTPError
 from elasticsearch import Elasticsearch
+from datetime import datetime, timedelta
+from elasticsearch.exceptions import NotFoundError
 from ..models.session import Session, SessionSearchRequest
 
 class SessionDAO(BaseDAO[Session, SessionSearchRequest]):
@@ -21,6 +24,24 @@ class SessionDAO(BaseDAO[Session, SessionSearchRequest]):
 
         self.filter_has_duration = {"exists": {"field": "duration"}}
         self.filter_has_expires_at = {"exists": {"field": "expires_at"}}
+
+    def check(self, id: str) -> Session:
+        try:
+            o = self.get(id)
+
+            if o.expired():
+                self.remove(id)
+                raise HTTPError(url="Session::check", code=401, msg="Session expired", hdrs={}, fp=None)
+
+            if o.duration is not None and o.can_update():   # Update the expiration.
+                o.updated_at = now = datetime.now()
+                o.expires_at = now + timedelta(minutes=o.duration)
+                self.update(id, {"expires_at": o.expires_at, "updated_at": now})
+
+            return o
+
+        except NotFoundError:
+            raise HTTPError(url="Session::check", code=401, msg="Session not found", hdrs={}, fp=None)
 
     def _build_query(self, f: SessionSearchRequest) -> dict[str, Any]:
         must = []
