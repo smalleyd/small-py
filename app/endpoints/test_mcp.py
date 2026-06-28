@@ -63,11 +63,15 @@ VALUE = {
 class TestMcpEndpoints(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        session_dao.add(Session(id="token-1", person=Person(id="person-1", email="one@test.com", name="Name", first_name="First", last_name="Last", type=Type.ADMIN), duration=None))
+        session_dao.load([
+            {"id": "token-1", "person": {"id": "person-1", "email": "one@test.com", "name": "Name", "first_name": "First", "last_name": "Last", "type": Type.ADMIN.value}, "duration": None},
+            {"id": "token-2", "person": {"id": "person-2", "email": "one@test.com", "name": "Name", "first_name": "First", "last_name": "Last", "type": Type.USER.value}, "duration": None},
+            {"id": "token-3", "person": {"id": "person-1", "email": "one@test.com", "name": "Name", "first_name": "First", "last_name": "Last", "type": Type.USER.value}, "duration": None}
+        ])
 
     @classmethod
     def tearDownClass(cls):
-        session_dao.remove("token-1")
+        session_dao.remove("token-1", "token-2", "token-3")
 
     def test_000_find(self):
         response = client.get("/mcp")
@@ -274,6 +278,21 @@ class TestMcpEndpoints(unittest.TestCase):
 
         if expected == 1:
             self.assertEqual("mcp-1", value.data[0]["id"], "Check ID")
+
+    @parameterized.expand([
+        ("token-2", 0),
+        ("token-3", 1)
+    ])
+    def test_040_find_as(self, token: str, expected: int):
+        with TestClient(app, headers={"X-Contextly-Key": token}) as client_:
+            response = client_.get("/mcp")
+            self.assertEqual(200, response.status_code, "Check status_code")
+
+            results = Results[Mcp](**response.json())
+            self.assertIsNotNone(results, "Exists")
+            self.assertEqual(expected, results.total, "Check total")
+            self.assertEqual(expected, len(results.data), "Check data")
+            self.assertEqual(expected, len(results.scores), "Check scores")
 
     def test_050_archive(self):
         response = client.delete("/mcp/mcp-1/archive")

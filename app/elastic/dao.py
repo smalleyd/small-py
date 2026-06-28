@@ -150,8 +150,9 @@ class BaseDAO(Generic[E, F]):
     def refresh(self):
         self.es.indices.refresh(index=self.index)
 
-    def remove(self, id:str) -> None:
-        self.es.delete(index=self.index, id=id, refresh="wait_for")
+    def remove(self, *ids:str) -> None:
+        for id in ids:
+            self.es.delete(index=self.index, id=id, refresh="wait_for")
 
     def set(self, id:str, field:str, value:Any | None, updated_at: datetime | None = None):
         self.does_exist(id)

@@ -15,8 +15,14 @@ router = APIRouter(prefix="/mcp", tags=["MCP"])
 async def get(id: str) -> Mcp:
     return dao.get(id)
 
-@router.get("/", response_model_exclude_none=True, dependencies=[Depends(auth)])
-async def find(value: Annotated[McpSearchRequest, Query()]) -> Results[Mcp]:
+@router.get("/", response_model_exclude_none=True)
+async def find(
+    session: Annotated[Session, Depends(auth)],
+    value: Annotated[McpSearchRequest, Query()]
+) -> Results[Mcp]:
+    if not session.admin():
+        value.creator_id = session.person.id
+
     return dao.search(value)
 
 @router.get("/scroll/{id}", response_model_exclude_none=True, dependencies=[Depends(auth)])
