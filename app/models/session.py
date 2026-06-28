@@ -4,14 +4,22 @@ from ..elastic.dao import Entity, Filter
 from datetime import datetime, timedelta
 from ..models.person import Person, Type
 
+UPDATE_DELTA = timedelta(seconds=5)
+
 class Session(Entity):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     person: Person
-    duration: Annotated[int | None, Field(ge=5, default=30)]
+    duration: Annotated[int | None, Field(ge=5, default=30)]    # Minutes
     expires_at: datetime | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
+
+    def can_update(self) -> bool:
+        return self.updated_at < (datetime.now() - UPDATE_DELTA)
+
+    def expired(self) -> bool:
+        return (self.expires_at is not None) and (self.expires_at < datetime.now())
 
 class SessionSearchRequest(Filter):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)

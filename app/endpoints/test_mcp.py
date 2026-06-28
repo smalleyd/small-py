@@ -1,13 +1,14 @@
 import unittest
 from typing import Any
-from ..elastic.dao import Results
-from fastapi.testclient import TestClient
 from ..main import app
 from ..models.mcp import Mcp
-from ..dao.startup import mcp_dao
+from ..elastic.dao import Results
 from ..models.common import Result
 from parameterized import parameterized
 from datetime import datetime, timedelta
+from fastapi.testclient import TestClient
+from ..models.session import Person, Session
+from ..dao.startup import mcp_dao, session_dao
 
 client = TestClient(app, headers={"X-Contextly-Key": "token-1"})
 minutesAgo = datetime.now() - timedelta(minutes=5)
@@ -59,6 +60,14 @@ VALUE = {
 }
 
 class TestMcpEndpoints(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        session_dao.add(Session(id="token-1", person=Person(id="person-1", email="one@test.com", name="Name", first_name="First", last_name="Last"), duration=None))
+
+    @classmethod
+    def tearDownClass(cls):
+        session_dao.remove("token-1")
+
     def test_000_find(self):
         response = client.get("/mcp")
         self.assertEqual(200, response.status_code, "Check status_code")

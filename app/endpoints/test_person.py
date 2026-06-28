@@ -3,11 +3,12 @@ from typing import Any
 from ..main import app
 from ..elastic.dao import Results
 from urllib.error import HTTPError
-from ..dao.startup import person_dao
+from ..models.session import Session
 from pydantic import ValidationError
 from parameterized import parameterized
 from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
+from ..dao.startup import person_dao, session_dao
 from ..models.person import Person, PersonSearchRequest, Source, Type
 
 client = TestClient(app, headers={"X-Contextly-Key": "token-1"})
@@ -28,9 +29,14 @@ class PersonEndpointsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.scroll_id = None
+        session_dao.add(Session(id="token-1", person=Person(id="person-1", email="one@test.com", name="Name", first_name="First", last_name="Last"), duration=None))
 
     def setUp(self):
         self.scroll_id = PersonEndpointsTest.scroll_id
+
+    @classmethod
+    def tearDownClass(cls):
+        session_dao.remove("token-1")
 
     def test_000_find(self):
         response = client.get("/people")
