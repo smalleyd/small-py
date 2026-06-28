@@ -4,8 +4,8 @@ from fastapi import FastAPI, Request
 from pydantic import ValidationError
 from elasticsearch import NotFoundError
 from typing import Any, Awaitable, Callable
+from fastapi.middleware.cors import CORSMiddleware    # It did not work as documented so built my own version. DLS on 6/26/2026.
 from fastapi.responses import JSONResponse, Response
-# from fastapi.middleware.cors import CORSMiddleware    # It did not work as documented so built my own version. DLS on 6/26/2026.
 from .endpoints import authentication, mcp, person, session
 
 app = FastAPI(title="Shredly", version="0.0.1")
@@ -13,7 +13,15 @@ app.include_router(authentication.router)
 app.include_router(person.router)
 app.include_router(mcp.router)
 app.include_router(session.router)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+"""
 @app.middleware("http")
 async def add_cors_headers(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     response = await call_next(request)
@@ -23,6 +31,7 @@ async def add_cors_headers(request: Request, call_next: Callable[[Request], Awai
     response.headers["access-control-allow-headers"] = "Origin,X-Requested-With,Accept,Accept-Language,Authorization,Content-Type,X-Contextly-Key"
 
     return response
+"""
 
 @app.exception_handler(HTTPError)
 async def handle_http_error(request: Request, exc: HTTPError) -> JSONResponse:
