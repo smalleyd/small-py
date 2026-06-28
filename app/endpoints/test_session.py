@@ -62,6 +62,14 @@ class SessionEndpointsTest(unittest.TestCase):
     def test_000_expired(self, value: Session, expected: bool):
         self.assertEqual(expected, value.expired())
 
+    @parameterized.expand([
+        (Session(person=Person(email="1@test.com", name="Name", first_name="First", last_name="Last", type=Type.ADMIN)), True, False),
+        (Session(person=Person(email="1@test.com", name="Name", first_name="First", last_name="Last", type=Type.USER)), False, True),
+    ])
+    def test_000_check_properties(self, value: Session, admin: bool, user: bool):
+        self.assertEqual(admin, value.admin(), "Check admin()")
+        self.assertEqual(user, value.user(), "Check user()")
+
     def test_000_find(self):
         response = client.get("/sessions", params={})
         self.assertEqual(response.status_code, 200, "Check status_code")

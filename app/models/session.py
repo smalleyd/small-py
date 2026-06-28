@@ -21,6 +21,9 @@ class Session(Entity):
     def expired(self) -> bool:
         return (self.expires_at is not None) and (self.expires_at < datetime.now())
 
+    def admin(self) -> bool: return self.person.admin()
+    def user(self) -> bool: return self.person.user()
+
 class SessionSearchRequest(Filter):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
