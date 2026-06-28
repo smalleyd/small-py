@@ -38,6 +38,14 @@ class PersonEndpointsTest(unittest.TestCase):
     def tearDownClass(cls):
         session_dao.remove("token-1")
 
+    @parameterized.expand([
+        (Person(email="1@test.com", name="Name", first_name="First", last_name="Last", type=Type.ADMIN), True, False),
+        (Person(email="1@test.com", name="Name", first_name="First", last_name="Last", type=Type.USER), False, True),
+    ])
+    def test_000_check_properties(self, value: Person, admin: bool, user: bool):
+        self.assertEqual(admin, value.admin(), "Check admin()")
+        self.assertEqual(user, value.user(), "Check user()")
+
     def test_000_find(self):
         response = client.get("/people")
         self.assertEqual(200, response.status_code, "Check status_code")

@@ -28,6 +28,9 @@ class Person(Entity):
     archived_at: datetime | None = None
     auth_at: datetime | None = None
 
+    def admin(self) -> bool: return self.type == Type.ADMIN
+    def user(self) -> bool: return self.type == Type.USER
+
 class PersonSearchRequest(Filter):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
