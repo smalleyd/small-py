@@ -48,6 +48,7 @@ class AuthenticationEndpointsTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         person_dao.remove(cls.person.id)
+        google.get_oauth_user = google_get_oauth_user_og
 
     def test_000_start_otp_existing_person(self):
         response = client.get("/auth/otp", params={"email": "first@test.com"})

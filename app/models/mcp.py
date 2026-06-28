@@ -1,5 +1,6 @@
 from enum import Enum
 from . import patterns
+from .common import Named
 from datetime import datetime
 from typing import Annotated, Any
 from ..elastic.dao import Entity, Filter
@@ -59,6 +60,7 @@ class Mcp(Entity):
     tools: list[Tool]
     authentication: Authentication | None = None
     oauth: OAuth | None = None
+    creator: Named | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
     archived_at: datetime | None = None
@@ -77,6 +79,8 @@ class McpSearchRequest(Filter):
     authentication_url: str | None = None
     has_authentication: bool | None = None
     has_oauth: bool | None = None
+    creator_id: str | None = None
+    creator_name: str | None = None
     created_at_from: datetime | None = None
     created_at_to: datetime | None = None
     updated_at_from: datetime | None = None

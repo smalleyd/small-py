@@ -36,6 +36,10 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
                     "scopes": {"type": "keyword", "normalizer": "lowercase"},
                     "extra_params": {"type": "flattened"}
                 }},
+                "creator": {"properties":{
+                    "id": {"type": "keyword"},
+                    "name": {"type": "text", "fields": {"keyword": {"type": "keyword", "ignore_above": 256, "normalizer":"lowercase"}}}
+                }},
                 "created_at": {"type": "date"},
                 "updated_at": {"type": "date"},
                 "archived_at": {"type": "date"}
@@ -93,6 +97,10 @@ class McpDAO(BaseDAO[Mcp, McpSearchRequest]):
                 must_not.append(self.filter_has_authentication)
         if f.has_oauth is not None:
             (must if f.has_oauth else must_not).append(self.filter_has_oauth)
+        if f.creator_id:
+            must.append({"term": {"creator.id": f.creator_id}})
+        if f.creator_name:
+            must.append({"match": {"creator.name": {"query": f.creator_name, "fuzziness": "AUTO" }}})
         self.range_query(must, "created_at", f.created_at_from, f.created_at_to)
         self.range_query(must, "updated_at", f.updated_at_from, f.updated_at_to)
         self.range_query(must, "archived_at", f.archived_at_from, f.archived_at_to)

@@ -35,7 +35,7 @@ class OAuthUserTest(unittest.TestCase):
 
     def test_get_oauth_user(self):
         try:
-            get_oauth_user("token-1")
+            get_oauth_user("token-3")
         except HTTPError as ex:
             self.assertIsNotNone(ex, "Exists")
             self.assertEqual(401, ex.response.status_code, "Check status_code")

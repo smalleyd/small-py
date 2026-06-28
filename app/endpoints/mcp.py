@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Body, Depends, Query
+from ..models.mcp import *
 from ..dao.startup import mcp_dao
 from ..elastic.dao import Results
 from ..models.common import Result
-from .helpers import do_patch_validation
-from ..models.mcp import *
+from ..models.session import Session
 from ..security import auth, auth_admin
+from .helpers import do_patch_validation
+from fastapi import APIRouter, Body, Depends, Query
 
 dao = mcp_dao
 
@@ -30,13 +31,20 @@ async def get_by_slug(slug: str) -> Mcp:
 async def has_slug(slug: str) -> Result[bool]:
     return Result[bool](value=dao.has_slug(slug))
 
-@router.post("/", status_code=201, dependencies=[Depends(auth)])
-async def add(value: Mcp) -> Mcp:
+@router.post("/", status_code=201)
+async def add(
+    session: Annotated[Session, Depends(auth)],
+    value: Mcp
+) -> Mcp:
+    value.creator = session.person.named()
     return dao.upsert(value)
 
-@router.put("/", dependencies=[Depends(auth_admin)])
-async def set(value: Mcp) -> Mcp:
-    return await add(value)
+@router.put("/")
+async def set(
+    session: Annotated[Session, Depends(auth_admin)],
+    value: Mcp
+) -> Mcp:
+    return await add(session, value)
 
 @router.put("/{id}/tools", status_code=204, dependencies=[Depends(auth)])
 async def set_tools(id: str, values: list[Tool]):

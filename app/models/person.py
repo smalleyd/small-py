@@ -1,5 +1,6 @@
 from enum import Enum
 from . import patterns
+from .common import Named
 from typing import Annotated
 from datetime import datetime
 from pydantic import ConfigDict, Field
@@ -28,6 +29,7 @@ class Person(Entity):
     archived_at: datetime | None = None
     auth_at: datetime | None = None
 
+    def named(self) -> Named: return Named(id=self.id, name=self.name)
     def admin(self) -> bool: return self.type == Type.ADMIN
     def user(self) -> bool: return self.type == Type.USER
 
