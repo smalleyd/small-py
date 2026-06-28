@@ -4,10 +4,11 @@ from ..main import app
 from ..models.mcp import Mcp
 from ..elastic.dao import Results
 from ..models.common import Result
+from ..models.session import Session
 from parameterized import parameterized
 from datetime import datetime, timedelta
+from ..models.person import Person, Type
 from fastapi.testclient import TestClient
-from ..models.session import Person, Session
 from ..dao.startup import mcp_dao, session_dao
 
 client = TestClient(app, headers={"X-Contextly-Key": "token-1"})
@@ -62,7 +63,7 @@ VALUE = {
 class TestMcpEndpoints(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        session_dao.add(Session(id="token-1", person=Person(id="person-1", email="one@test.com", name="Name", first_name="First", last_name="Last"), duration=None))
+        session_dao.add(Session(id="token-1", person=Person(id="person-1", email="one@test.com", name="Name", first_name="First", last_name="Last", type=Type.ADMIN), duration=None))
 
     @classmethod
     def tearDownClass(cls):

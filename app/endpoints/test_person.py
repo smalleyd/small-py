@@ -29,7 +29,8 @@ class PersonEndpointsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.scroll_id = None
-        session_dao.add(Session(id="token-1", person=Person(id="person-1", email="one@test.com", name="Name", first_name="First", last_name="Last"), duration=None))
+        session_dao.add(Session(id="token-1", person=Person(id="person-1", email="one@test.com", name="Name", first_name="First", last_name="Last", type=Type.ADMIN), duration=None))
+        session_dao.add(Session(id="token-2", person=Person(id="person-1", email="one@test.com", name="Name", first_name="First", last_name="Last", type=Type.USER), duration=None))
 
     def setUp(self):
         self.scroll_id = PersonEndpointsTest.scroll_id
@@ -37,6 +38,17 @@ class PersonEndpointsTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         session_dao.remove("token-1")
+        session_dao.remove("token-2")
+
+    @parameterized.expand([
+        (None, 401, {"detail": "Not authenticated"}),
+        ({"X-Contextly-Key": "token-2"}, 403, {"message": "Not authorized"})
+    ])
+    def test_000_auth_fail(self, headers: dict[str, str], status_code: int, output: dict[str, Any]):
+        with TestClient(app) as client_:
+            response = client_.get("/sessions", headers=headers)
+            self.assertEqual(status_code, response.status_code, "Check status_code")
+            self.assertEqual(output, response.json(), "Check json")
 
     @parameterized.expand([
         (Person(email="1@test.com", name="Name", first_name="First", last_name="Last", type=Type.ADMIN), True, False),
