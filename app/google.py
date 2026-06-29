@@ -1,12 +1,13 @@
 import requests
-from dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict
 
 URL = "https://www.googleapis.com"
 PATH_OAUTH = "/oauth2/v3"
 URL_OAUTH_USER = URL + PATH_OAUTH + "/userinfo"
 
-@dataclass
-class OAuthUser():
+class OAuthUser(BaseModel):
+    model_config = ConfigDict(extra="ignore", str_strip_whitespace=True)    # MUST ignore an extra properties that comeback in the payload. DLS on 6/29/2026.
+
     sub: str
     name: str
     email: str
