@@ -43,6 +43,9 @@ class SessionDAO(BaseDAO[Session, SessionSearchRequest]):
         except NotFoundError:
             raise HTTPError(url="Session::check", code=401, msg="Session not found", hdrs={}, fp=None)
 
+    def clean(self) -> int:
+        return self.remove_by_query(SessionSearchRequest(expires_at_to=datetime.now()), refresh=False)  # Remove expired sessions.
+
     def _build_query(self, f: SessionSearchRequest) -> dict[str, Any]:
         must = []
         must_not = []

@@ -1,5 +1,6 @@
 from typing import Annotated, Any
 from ..elastic.dao import Results
+from ..models.common import Result
 from ..dao.startup import session_dao
 from ..security import auth, auth_admin
 from .helpers import do_patch_validation
@@ -34,6 +35,10 @@ async def patch(id: str, value: dict[str, Any]) -> Session:
     dao.patch(id, do_patch_validation(value, Session))
 
     return dao.get(id)
+
+@router.delete("/clean", dependencies=[Depends(auth_admin)], summary="Clean", description="Removes expired sessions.")
+async def clean() -> Result[int]:   # MUST put this before the delete_by_id below.
+    return Result(value=dao.clean())
 
 @router.delete("/{id}", status_code=204, dependencies=[Depends(auth)])
 async def delete(id: str):

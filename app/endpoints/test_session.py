@@ -3,6 +3,7 @@ from typing import Any
 from ..main import app
 from ..elastic.dao import Results
 from urllib.error import HTTPError
+from ..models.common import Result
 from ..models.session import Session
 from ..dao.startup import session_dao
 from parameterized import parameterized
@@ -331,19 +332,32 @@ class SessionEndpointsTest(unittest.TestCase):
         self.assertLess(expires_at_, value.expires_at, "Check expires_at")
         self.assertLess(now_, value.updated_at, "Check updated_at")
 
-    def test_999_delete(self):
+    def test_995_delete(self):
         response = client.delete("/sessions/session-1")
         self.assertEqual(204, response.status_code, "Check status_code")
 
-    def test_999_delete_get(self):
+    def test_995_delete_get(self):
         response = client.get("/sessions/session-1")
         self.assertEqual(404, response.status_code, "Check status_code")
 
+    def test_999_clean(self):
+        now_ = datetime.now()
+        session_dao.update("session-5", {"expires_at": now_})
+        session_dao.update("session-8", {"expires_at": now_})
+        session_dao.refresh()
+
+        response = client.delete("/sessions/clean")
+        self.assertEqual(200, response.status_code, "Check status_code")
+
+        result = Result[int](**response.json())
+        self.assertIsNotNone(result, "Exists")
+        self.assertEqual(2, result.value, "Check value")
+
     def test_999_delete_rest(self):
+        already_deleted = {5, 8}
         for i in range(3, 11):  # session-2 was deleted because it was expired.
             response = client.delete(f"/sessions/session-{i}")
-            self.assertEqual(204, response.status_code, f"Check status_code: {i}")
+            self.assertEqual(204 if i not in already_deleted else 404, response.status_code, f"Check status_code: {i}")
 
 if __name__ == '__main__':
     unittest.main()
-
