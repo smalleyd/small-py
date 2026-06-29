@@ -421,5 +421,17 @@ class BaseDAOTest(unittest.TestCase):
     def test_99_remove_get(self):
         self.assertRaises(NotFoundError, lambda: self.dao.get("test-person-1"))
 
+    def test_99_remove_loaded_fail(self):
+        self.assertEqual(0, self.dao.remove_by_query(PersonSearchRequest(name="Person"), refresh=True))
+
+    def test_99_remove_loaded_fail_count(self):
+        self.assertEqual(self.initial_count, self.dao.count(PersonSearchRequest()), "Check count")
+
+    def test_99_remove_loaded_success(self):
+        self.assertEqual(10, self.dao.remove_by_query(PersonSearchRequest(name="people"), refresh=True))
+
+    def test_99_remove_loaded_success_count(self):
+        self.assertEqual(0, self.dao.count(PersonSearchRequest()), "Check count")
+
 if __name__ == "__main__":
     unittest.main()

@@ -154,6 +154,13 @@ class BaseDAO(Generic[E, F]):
         for id in ids:
             self.es.delete(index=self.index, id=id, refresh="wait_for")
 
+    def remove_by_query(self, filter_:F, refresh:bool = False) -> int:
+        return self.es.delete_by_query(
+            index=self.index,
+            query=self.build_query(filter_),
+            refresh=refresh
+        ).body["deleted"]
+
     def set(self, id:str, field:str, value:Any | None, updated_at: datetime | None = None):
         self.does_exist(id)
         if updated_at is None: updated_at = datetime.now()
