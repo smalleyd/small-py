@@ -2,6 +2,7 @@ from .. import google
 from typing import Annotated
 from ..datasource import mailer
 from urllib.error import HTTPError
+from ..models.patterns import EMAIL
 from ..models.session import Session
 from fastapi import APIRouter, Query
 from datetime import datetime, timedelta
@@ -47,7 +48,7 @@ async def google_oauth(value: OAuthToken) -> Session:
     return session_dao.upsert(Session(person=person, duration=30, expires_at=expire_when()))
 
 @router.get("/otp", summary="Start OTP")
-async def start_otp(email: Annotated[str, Query(pattern="^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")]) -> OtpStartResponse:
+async def start_otp(email: Annotated[str, Query(pattern=EMAIL)]) -> OtpStartResponse:
     token = otp_dao.generate(email)
     person = person_dao.get_by_email_(email)
 
