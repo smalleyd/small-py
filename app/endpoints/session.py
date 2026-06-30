@@ -4,6 +4,7 @@ from ..models.common import Result
 from ..dao.startup import session_dao
 from ..security import auth, auth_admin
 from .helpers import do_patch_validation
+from fastapi.responses import JSONResponse
 from fastapi import APIRouter, Depends, Query
 from ..models.session import Session, SessionSearchRequest
 
@@ -25,6 +26,15 @@ async def scroll(id: str, time: str = "30s") -> Results[Session]:
 @router.post("/", status_code=201, dependencies=[Depends(auth_admin)])
 async def add(value: Session) -> Session:
     return dao.upsert(value)
+
+@router.post("/api", response_model=Session, summary="Generate API Key", description="Generates a durable API key.")
+async def generate_api_key(session: Annotated[Session, Depends(auth)]) -> JSONResponse:
+    o = dao.get_durable_by_person(session.person.id)
+    if o: return JSONResponse(status_code=200, content=o.model_dump(mode="json"))
+
+    return  JSONResponse(
+        status_code=201,
+        content=dao.upsert(Session(person=session.person, duration=None, expires_at=None)).model_dump(mode="json"))
 
 @router.put("/", dependencies=[Depends(auth_admin)])
 async def set(value: Session) -> Session:

@@ -46,6 +46,9 @@ class SessionDAO(BaseDAO[Session, SessionSearchRequest]):
     def clean(self) -> int:
         return self.remove_by_query(SessionSearchRequest(expires_at_to=datetime.now()), refresh=False)  # Remove expired sessions.
 
+    def get_durable_by_person(self, person_id: str) -> Session | None:
+        return self.get_by_query_(self.build_query(SessionSearchRequest(person_id=person_id, has_expires_at=False)))
+
     def _build_query(self, f: SessionSearchRequest) -> dict[str, Any]:
         must = []
         must_not = []

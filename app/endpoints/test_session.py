@@ -10,8 +10,10 @@ from parameterized import parameterized
 from ..models.person import Person, Type
 from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
+from ..models.common import HEADER_API_KEY
 
-client = TestClient(app, headers={"X-Contextly-Key": "token-1"})
+client = TestClient(app, headers={HEADER_API_KEY: "token-1"})
+client_ = TestClient(app)
 now = datetime.now()
 minutes = timedelta(minutes=5)
 minutesAgo = now - minutes
@@ -209,6 +211,7 @@ class SessionEndpointsTest(unittest.TestCase):
         self.assertEqual(expected, len(results.scores), "Check scores")
 
     def test_050_load(self):
+        now_ = datetime.now()
         session_dao.load([
             {
                 "id": f"session-{i}",
@@ -221,6 +224,8 @@ class SessionEndpointsTest(unittest.TestCase):
                 },
                 "duration": i * 10 if 0 == (i % 2) else None,
                 "expires_at": (now + timedelta(minutes=i * 10)) if 0 == (i % 2) else None,
+                "created_at": now_,
+                "updated_at": now_
             }
             for i in range(2, 11)
         ])
@@ -280,6 +285,32 @@ class SessionEndpointsTest(unittest.TestCase):
         self.assertEqual(0, len(results.data), "Check data")
         self.assertIsNone(results.scroll_id, "Check scroll_id")
         self.assertEqual(0, len(results.scores), "Check scores")
+
+    def test_060_generate_api_key_200(self):
+        now_ = datetime.now()
+
+        response = client_.post("/sessions/api", headers={HEADER_API_KEY: "session-3"})
+        self.assertEqual(200, response.status_code, "Check status_code")
+
+        value = Session(**response.json())
+        self.assertIsNotNone(value, "Exists")
+        self.assertEqual("session-3", value.id, "Check ID")
+        self.assertGreater(now_, value.created_at, "Check created_at")
+        self.assertGreater(now_, value.updated_at, "Check updated_at")
+
+    def test_060_generate_api_key_201(self):
+        now_ = datetime.now()
+
+        response = client_.post("/sessions/api", headers={HEADER_API_KEY: "session-4"})
+        self.assertEqual(201, response.status_code, "Check status_code")
+
+        value = Session(**response.json())
+        self.assertIsNotNone(value, "Exists")
+        self.assertNotEqual("session-4", value.id, "Check ID")
+        self.assertLess(now_, value.created_at, "Check created_at")
+        self.assertLess(now_, value.updated_at, "Check updated_at")
+
+        session_dao.remove(value.id)
 
     def test_100_check_not_found(self):
         try:
