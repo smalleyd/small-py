@@ -28,7 +28,7 @@ async def add_cors_headers(request: Request, call_next: Callable[[Request], Awai
     response.headers["access-control-allow-origin"] = "*"
     response.headers["access-control-allow-methods"] = "*"
     response.headers["access-control-allow-credentials"] = "true"
-    response.headers["access-control-allow-headers"] = "Origin,X-Requested-With,Accept,Accept-Language,Authorization,Content-Type,X-Contextly-Key"
+    response.headers["access-control-allow-headers"] = f"Origin,X-Requested-With,Accept,Accept-Language,Authorization,Content-Type,{HEADER_API_KEY}}"
 
     return response
 """

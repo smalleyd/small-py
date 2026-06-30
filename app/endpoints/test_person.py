@@ -8,10 +8,11 @@ from pydantic import ValidationError
 from parameterized import parameterized
 from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
+from ..models.common import HEADER_API_KEY
 from ..dao.startup import person_dao, session_dao
 from ..models.person import Person, PersonSearchRequest, Source, Type
 
-client = TestClient(app, headers={"X-Contextly-Key": "token-1"})
+client = TestClient(app, headers={HEADER_API_KEY: "token-1"})
 sources = list(Source)
 minutesAgo = datetime.now() - timedelta(minutes=5)
 minutesAhead = datetime.now() + timedelta(minutes=5)
@@ -42,7 +43,7 @@ class PersonEndpointsTest(unittest.TestCase):
 
     @parameterized.expand([
         (None, 401, {"detail": "Not authenticated"}),
-        ({"X-Contextly-Key": "token-2"}, 403, {"message": "Not authorized"})
+        ({HEADER_API_KEY: "token-2"}, 403, {"message": "Not authorized"})
     ])
     def test_000_auth_fail(self, headers: dict[str, str], status_code: int, output: dict[str, Any]):
         with TestClient(app) as client_:

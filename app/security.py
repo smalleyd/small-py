@@ -4,8 +4,9 @@ from urllib.error import HTTPError
 from .models.session import Session
 from .dao.startup import session_dao
 from fastapi.security import APIKeyHeader
+from .models.common import HEADER_API_KEY
 
-auth_key = APIKeyHeader(name="X-Contextly-Key")
+auth_key = APIKeyHeader(name=HEADER_API_KEY)
 
 async def auth(key: Annotated[str, Depends(auth_key)]) -> Session:
     return session_dao.check(key)

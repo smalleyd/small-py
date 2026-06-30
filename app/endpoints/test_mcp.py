@@ -4,14 +4,14 @@ from ..main import app
 from ..models.mcp import Mcp
 from ..elastic.dao import Results
 from ..models.common import Result
-from ..models.session import Session
 from parameterized import parameterized
 from datetime import datetime, timedelta
 from ..models.person import Person, Type
 from fastapi.testclient import TestClient
+from ..models.common import HEADER_API_KEY
 from ..dao.startup import mcp_dao, session_dao
 
-client = TestClient(app, headers={"X-Contextly-Key": "token-1"})
+client = TestClient(app, headers={HEADER_API_KEY: "token-1"})
 minutesAgo = datetime.now() - timedelta(minutes=5)
 minutesAhead = datetime.now() + timedelta(minutes=5)
 
@@ -284,7 +284,7 @@ class TestMcpEndpoints(unittest.TestCase):
         ("token-3", 1)
     ])
     def test_040_find_as(self, token: str, expected: int):
-        with TestClient(app, headers={"X-Contextly-Key": token}) as client_:
+        with TestClient(app, headers={HEADER_API_KEY: token}) as client_:
             response = client_.get("/mcp")
             self.assertEqual(200, response.status_code, "Check status_code")
 
