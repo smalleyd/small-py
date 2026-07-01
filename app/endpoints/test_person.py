@@ -3,13 +3,13 @@ from typing import Any
 from ..main import app
 from ..elastic.dao import Results
 from urllib.error import HTTPError
-from ..models.session import Session
 from pydantic import ValidationError
 from parameterized import parameterized
 from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
 from ..models.common import HEADER_API_KEY
 from ..dao.startup import person_dao, session_dao
+from ..models.session import Session, SessionSearchRequest
 from ..models.person import Person, PersonSearchRequest, Source, Type
 
 client = TestClient(app, headers={HEADER_API_KEY: "token-1"})
@@ -30,8 +30,10 @@ class PersonEndpointsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.scroll_id = None
-        session_dao.add(Session(id="token-1", person=Person(id="person-1", email="one@test.com", name="Name", first_name="First", last_name="Last", type=Type.ADMIN), duration=None))
-        session_dao.add(Session(id="token-2", person=Person(id="person-1", email="one@test.com", name="Name", first_name="First", last_name="Last", type=Type.USER), duration=None))
+
+        # MUST use person-100 instead of person-1 to avoid removal when person-1 is deleted/archived. DLS on 6/30/2026.
+        session_dao.add(Session(id="token-1", person=Person(id="person-100", email="100@test.com", name="Name", first_name="First", last_name="Last", type=Type.ADMIN), duration=None))
+        session_dao.add(Session(id="token-2", person=Person(id="person-100", email="100@test.com", name="Name", first_name="First", last_name="Last", type=Type.USER), duration=None))
 
     def setUp(self):
         self.scroll_id = PersonEndpointsTest.scroll_id
@@ -237,8 +239,15 @@ class PersonEndpointsTest(unittest.TestCase):
         self.assertEqual(value.auth_at, value.updated_at, "Check updated_at")
 
     def test_040_archive(self):
+        session_dao.load([{"id": f"session-{i}", "person": {"id": "person-1"}} for i in range(5)])  # Make sure that the person's sessions are deleted when archived.
+        session_dao.refresh()
+        self.assertEqual(7, session_dao.count(SessionSearchRequest()), "Check session count: before")
+
         response = client.delete("/people/person-1/archive")
         self.assertEqual(204, response.status_code, "Check status_code")
+
+        session_dao.refresh()
+        self.assertEqual(2, session_dao.count(SessionSearchRequest()), "Check session count: after")
 
     def test_040_archive_get(self):
         value = Person(**client.get("/people/person-1").json())
@@ -340,8 +349,28 @@ class PersonEndpointsTest(unittest.TestCase):
         self.assertEqual(0, len(results.scores), "Check scores")
 
     def test_999_delete(self):
+        session_dao.load([{"id": f"session-{i}", "person": {"id": "person-1"}} for i in range(3)])  # Make sure that the person's sessions are deleted when archived.
+        session_dao.refresh()
+        self.assertEqual(5, session_dao.count(SessionSearchRequest()), "Check session count: before")
+
         response = client.delete("/people/person-1")
         self.assertEqual(204, response.status_code, "Check status_code")
+
+        session_dao.refresh()
+        self.assertEqual(2, session_dao.count(SessionSearchRequest()), "Check session count: after")
+
+    def test_999_delete_fail(self):
+        session_dao.load([{"id": f"session-{i}", "person": {"id": "person-1"}} for i in range(2)])  # Make sure that the person's sessions are deleted when archived.
+        session_dao.refresh()
+        self.assertEqual(4, session_dao.count(SessionSearchRequest()), "Check session count: before")
+
+        response = client.delete("/people/person-1")
+        self.assertEqual(404, response.status_code, "Check status_code")
+
+        session_dao.refresh()
+        self.assertEqual(4, session_dao.count(SessionSearchRequest()), "Check session count: after")
+
+        session_dao.remove("session-0", "session-1")
 
     def test_999_delete_get(self):
         response = client.get("/people/person-1")
