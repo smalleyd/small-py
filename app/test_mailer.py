@@ -8,7 +8,7 @@ from urllib.error import HTTPError
 
 mailer = Mailer()
 
-@unittest.skipUnless(os.getenv("TEST_MAILGUN", False), "No mailer configured")
+@unittest.skipUnless(os.environ.get("TEST_MAILGUN") == "1", "No mailer configured")
 class MailerTest(TestCase):
     def test_creation_failure(self):
         self.assertRaises(Exception, lambda: Mailer(key_name="INVALID"))
