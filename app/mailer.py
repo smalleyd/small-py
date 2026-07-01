@@ -6,6 +6,7 @@ from mailgun.client import Client
 from .models.person import Person
 from urllib.error import HTTPError
 
+DOMAIN = "mg.shredly.io"
 BASE_URL = "https://shredly.io/"
 REPLY_TO = "Shredly<noreply@fora.day>"
 LOGIN_OTP = """
@@ -47,7 +48,7 @@ class Mailer:
                 "name": name,
                 "url": url
             })
-        }, domain = "mg.fora.day")
+        }, domain = DOMAIN)
 
         if 400 <= response.status_code:
             print("MAILER:", response.text)

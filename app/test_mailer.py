@@ -8,7 +8,7 @@ from urllib.error import HTTPError
 
 mailer = Mailer()
 
-@unittest.skip # Only run when necessary otherwise it sends emails.
+# @unittest.skip # Only run when necessary otherwise it sends emails.
 class MailerTest(TestCase):
     def test_creation_failure(self):
         self.assertRaises(Exception, lambda: Mailer(key_name="INVALID"))
